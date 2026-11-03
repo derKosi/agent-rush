@@ -1,0 +1,37 @@
+[Unit]
+Description=Agent Rush control plane
+Documentation=https://github.com/derKosi/agent-rush
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=arrush
+Group=arrush
+WorkingDirectory=/opt/agent-rush
+EnvironmentFile=/opt/agent-rush/.env
+ExecStart=/opt/agent-rush/.venv/bin/uvicorn api.main:app --host 127.0.0.1 --port 8080
+Restart=on-failure
+RestartSec=3
+TimeoutStopSec=10
+
+# The service needs the Docker socket to spawn sandboxes. That is a real privilege
+# and the honest weak point of this design: anything that can talk to dockerd can
+# start a privileged container. Mitigation is that only this process runs as arrush
+# and the API is bound to localhost behind Caddy.
+SupplementaryGroups=docker
+
+# Bounds the damage if the web process is ever compromised.
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=full
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=agent-rush
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,55 @@
+#cloud-config
+# Paste this as "User Data" when creating the Vultr instance (Ubuntu 24.04 LTS).
+# Purpose: turn a fresh VM into something that can run the sandbox in one step,
+# so day 1 of the event is spent on the agent, not on apt.
+#
+# Deliberately boring and idempotent. If cloud-init fails, docs/runbook.md has the
+# same steps as six manual commands -- do not debug cloud-init under time pressure.
+
+package_update: true
+package_upgrade: false
+
+packages:
+  - docker.io
+  - git
+  - python3-venv
+  - python3-pip
+  - caddy
+  - ufw
+  - curl
+  - coreutils
+
+write_files:
+  - path: /etc/ssh/sshd_config.d/99-agent-rush.conf
+    permissions: "0644"
+    content: |
+      PasswordAuthentication no
+      PermitRootLogin prohibit-password
+      X11Forwarding no
+
+  - path: /etc/docker/daemon.json
+    permissions: "0644"
+    content: |
+      {
+        "live-restore": true,
+        "no-new-privileges": true,
+        "log-driver": "json-file",
+        "log-opts": { "max-size": "10m", "max-file": "3" }
+      }
+
+runcmd:
+  - [ systemctl, enable, --now, docker ]
+  - [ systemctl, restart, docker ]
+  # Order matters: allow 22 before enabling the firewall, otherwise SSH dies.
+  - [ ufw, allow, 22/tcp ]
+  - [ ufw, allow, 80/tcp ]
+  - [ ufw, allow, 443/tcp ]
+  - [ ufw, --force, enable ]
+  - [ systemctl, reload, ssh ]
+  - [ bash, -c, "id -u arrush >/dev/null 2>&1 || useradd -m -s /bin/bash arrush" ]
+  - [ bash, -c, "usermod -aG docker arrush" ]
+  - [ bash, -c, "install -d -o arrush -g arrush -m 0755 /opt/agent-rush /opt/agent-rush/work" ]
+  - [ systemctl, enable, --now, caddy ]
+  - [ bash, -c, "echo 'bootstrap ok' | tee /var/log/agent-rush-bootstrap.log" ]
+
+final_message: "agent-rush bootstrap done after $UPTIME seconds"

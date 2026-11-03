@@ -1,0 +1,33 @@
+# Reverse proxy. The app binds 127.0.0.1:8080 and is never reachable directly.
+#
+# Plain HTTP on :80 by default, because a Vultr VM gives you an IP, not a domain,
+# and a certificate needs a hostname. If you want TLS during the demo without
+# buying a domain, name the instance so it gets a wildcard-DNS name, e.g.
+#   203.0.113.10.sslip.io
+# and replace ":80" below with that hostname -- Caddy then provisions a
+# Let's Encrypt certificate automatically. Tradeoff: the demo URL then depends on
+# a third-party DNS service. For a 3-minute video, plain HTTP is the safer choice.
+
+:80 {
+	encode gzip zstd
+
+	# Do not log request bodies; the demo has no user data worth keeping.
+	log {
+		output file /var/log/caddy/agent-rush.log {
+			roll_size 10mb
+			roll_keep 3
+		}
+		format json
+	}
+
+	reverse_proxy 127.0.0.1:8080 {
+		header_up X-Real-IP {remote_host}
+		# Long-running task polls are fine; a hung sandbox must not hang the proxy forever.
+		transport http {
+			read_timeout 120s
+			write_timeout 120s
+		}
+	}
+
+	respond /health 200
+}

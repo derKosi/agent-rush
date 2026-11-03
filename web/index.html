@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent Rush — Package Triage</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<!-- UI shell only. No data logic yet: wiring to the API is core functionality and
+     is built inside the event window. Every element that will carry live data has a
+     data-hook attribute so the wiring has nothing to guess. -->
+<header class="bar">
+  <div class="brand">
+    <span class="dot"></span>
+    <strong>Agent Rush</strong>
+    <span class="sub">untrusted package triage</span>
+  </div>
+  <div class="status" data-hook="status">idle</div>
+</header>
+
+<main class="grid">
+  <section class="panel" id="task">
+    <h2>Task</h2>
+    <label for="pkg">Package</label>
+    <input id="pkg" data-hook="package-input" value="fixtures/sample_pkg-0.1.0.tar.gz" spellcheck="false">
+    <label for="q">Question</label>
+    <textarea id="q" data-hook="question-input" rows="3">Is this safe to install on a developer laptop?</textarea>
+    <button data-hook="run-button" disabled title="wired during the event window">Run triage</button>
+    <p class="note" data-hook="run-note">
+      Not wired yet — the button is disabled until the API exists. Intentionally not faked.
+    </p>
+  </section>
+
+  <section class="panel" id="trace">
+    <h2>Trace</h2>
+    <ol class="trace" data-hook="trace-list">
+      <li class="empty">no run yet</li>
+    </ol>
+  </section>
+
+  <section class="panel" id="evidence">
+    <h2>Evidence</h2>
+    <ul class="evidence" data-hook="evidence-list">
+      <li class="empty">egress.jsonl · exec.json · fsdiff.json</li>
+    </ul>
+  </section>
+
+  <section class="panel" id="verdict">
+    <h2>Verdict</h2>
+    <div class="verdict" data-hook="verdict">
+      <span class="badge muted">no verdict</span>
+    </div>
+    <p class="note">
+      The verdict may only cite what the three evidence sources contain.
+    </p>
+  </section>
+</main>
+
+<footer class="bar foot">
+  <span>Vultr Cloud Compute · Serverless Inference · sandboxed execution</span>
+</footer>
+
+<script>
+// Intentionally empty. Wired during the event window; see docs/provenance.md.
+</script>
+</body>
+</html>

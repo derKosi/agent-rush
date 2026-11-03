@@ -1,0 +1,21 @@
+# secrets
+.env
+*.key
+*.pem
+
+# python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# sandbox work dirs and build output
+work/
+out/
+dist/
+build/
+*.tar.gz
+
+# local notes
+.DS_Store
+notes/
