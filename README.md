@@ -18,10 +18,11 @@ shows the *attempt* and the *denial* side by side.
 | Area | State |
 |---|---|
 | Repo scaffold, LICENSE, docs, cost log | done before kickoff |
-| Sandbox image + runner + egress proxy | scaffolded before kickoff, **first verified run due during the event** |
+| Sandbox image + runner + egress proxy | scaffolded before kickoff, **first verified run on the VM still pending** |
 | Inference client (Vultr Serverless Inference) | scaffolded, key not yet provisioned |
-| Agent loop (plan → dispatch → observe → verdict) | **not started — built inside the event window** |
-| Web app, API, deployment on Vultr | **not started — built inside the event window** |
+| Orchestrator: sandbox dispatch + evidence collection | **built 03.11.**, 7/7 tests green against a stub runner |
+| Orchestrator: planner + verdict | not started |
+| Web app, API, deployment on Vultr | not started |
 
 See [`docs/provenance.md`](docs/provenance.md) for the file-by-file record of what existed
 before the event and what was built during it. That distinction is a rule of this hackathon,
