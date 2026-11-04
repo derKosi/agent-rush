@@ -27,10 +27,12 @@ Diese Tabelle ist die Abrechnung dazu. Sie wird beim Commit mitgeführt, nicht a
 | `deploy/Caddyfile` | vor dem Event | Deployment-Pipeline (Reverse Proxy) |
 | `deploy/install-service.sh` | vor dem Event | Deployment-Pipeline |
 | `deploy/check-vm.sh` | **im Event** (03.11.) | Deployment-Pipeline |
+| `deploy/remote-setup.sh` | **im Event** (04.11.) | Deployment-Pipeline |
 | `web/index.html`, `web/app.css` | vor dem Event | Repo-Skelett (UI-Hülle, ohne Logik) |
 | `fixtures/` | vor dem Event | Testdaten, kein Produktcode |
 | `api/` (FastAPI, Endpunkte) | **im Event** | Kernfunktionalität |
 | `orchestrator/` (plan→dispatch→verify) | **im Event** | Kernfunktionalität |
+| `tests/` | **im Event** | Prüfcode, keine Produktfunktion |
 | Agent-Prompting, Verdict-Logik | **im Event** | Kernfunktionalität |
 | Wiring UI → API | **im Event** | Kernfunktionalität |
 | Deployment auf Vultr, Härtung | **im Event** | Betrieb |
