@@ -56,6 +56,15 @@ Two honest limitations from that run:
   test. It is informational only; severity comes from the proxy log and the filesystem diff,
   which that process cannot write to.
 
+## No CI, by decision
+
+This repository has **no GitHub Actions workflows**, and that is on purpose. Nothing runs on
+push, nothing runs on tags. The sandbox image is built where it runs -- on the VM -- and the only
+verification that means anything here is a real container run, not a green checkmark on someone
+else's runner.
+
+`deploy/cloud-init.yaml` is VM bootstrap, not CI. GitHub never executes it.
+
 ## Architecture
 
 ```
