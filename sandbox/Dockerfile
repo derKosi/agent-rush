@@ -19,6 +19,12 @@ ENV PIP_NO_CACHE_DIR=1 \
     PYTHONUNBUFFERED=1 \
     HOME=/tmp/home
 
+# A build backend has to exist for `pip install --no-build-isolation` to run a
+# setup.py sdist at all. python:3.12-slim ships pip without setuptools, so the
+# fixture would fail with BackendUnavailable and we would learn nothing.
+# Unpinned on purpose: this image is throwaway per task, not a build cache.
+RUN pip install --no-cache-dir setuptools wheel
+
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod 0555 /usr/local/bin/entrypoint.sh
 

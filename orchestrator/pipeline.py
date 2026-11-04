@@ -29,6 +29,7 @@ def collect_evidence(run_dir, result) -> dict:
     return {
         "exec": _read_json(art / "exec.json"),
         "egress": egress_summary(egress_path),
+        "probe": _read_json(art / "probe.json"),
         "fsdiff": _read_json(art / "fsdiff.json"),
         "artifacts": result.get("artifacts") or {},
         "sandbox": {

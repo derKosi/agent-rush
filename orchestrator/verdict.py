@@ -96,6 +96,18 @@ def rule_findings(evidence):
                      f"targeting {hosts}.",
         })
 
+    # The probe report is written BY the process under test, so it is self-report and
+    # spoofable. Informational only: it tells the story, it never sets the severity.
+    probe = evidence.get("probe")
+    if isinstance(probe, dict) and isinstance(probe.get("attempts"), list):
+        denied = [a for a in probe["attempts"] if "=denied:" in str(a)]
+        if denied:
+            out.append({
+                "severity": "info", "source": "probe.json",
+                "claim": f"The build hook self-reported {len(denied)} blocked attempt(s): "
+                         + "; ".join(str(a) for a in probe["attempts"])[:400],
+            })
+
     if fs is None:
         # Not collected is not the same as clean. Say so rather than implying safety.
         out.append({

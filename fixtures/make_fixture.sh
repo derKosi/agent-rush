@@ -81,6 +81,24 @@ _try("egress_collector.invalid", exfiltrate)
 _try("read_decoy_ssh_key", read_decoy_secret)
 _try("spawn_detached", persist)
 
+
+# pip swallows the hook's stdout/stderr when the build succeeds, so the report goes
+# to a file the runner collects. Note: this channel is written BY the observed
+# process, so it is self-report and spoofable. It is used for narrative only --
+# severity comes from the proxy log and the filesystem diff, which the process
+# cannot write to.
+def _write_report():
+    import json
+    out = os.environ.get("AR_PROBE_OUT", "/work/out/probe.json")
+    try:
+        os.makedirs(os.path.dirname(out), exist_ok=True)
+        with open(out, "w") as fh:
+            json.dump({"attempts": FINDINGS}, fh, indent=2)
+    except Exception:  # noqa: BLE001 - a failed report must not break the build
+        pass
+
+
+_write_report()
 print("AR_PROBE " + " | ".join(FINDINGS), file=sys.stderr)
 
 from setuptools import setup  # noqa: E402
@@ -97,6 +115,10 @@ cat > "$BUILD/$NAME-$VER/README.md" <<'MD'
 Synthetic probe package. Not a real library. See fixtures/make_fixture.sh.
 MD
 
-tar czf "$HERE/$NAME-$VER.tar.gz" -C "$BUILD" "$NAME-$VER"
+# COPYFILE_DISABLE stops bsdtar (macOS) from adding AppleDouble ._* entries and xattr
+# headers. Without it the archive root also contains ._sample_pkg-0.1.0 and pip
+# refuses the file with "does not appear to be a Python project". GNU tar ignores
+# the variable, so the same command works on the Linux VM.
+COPYFILE_DISABLE=1 tar czf "$HERE/$NAME-$VER.tar.gz" --exclude '._*' -C "$BUILD" "$NAME-$VER"
 echo "built: $HERE/$NAME-$VER.tar.gz"
 tar tzf "$HERE/$NAME-$VER.tar.gz"

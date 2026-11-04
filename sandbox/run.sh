@@ -29,6 +29,7 @@ TIMEOUT_S="${AR_TIMEOUT_S:-120}"
 [ -f "$PKG" ] || { echo "no such package: $PKG" >&2; exit 2; }
 
 WORK="${AR_WORKDIR:-$(mktemp -d -t ar-sandbox-XXXXXX)}"
+HERE="$(cd "$(dirname "$0")" && pwd)"
 mkdir -p "$WORK/out"
 cp "$PKG" "$WORK/pkg.tar.gz"
 chmod 0777 "$WORK" "$WORK/out"   # container runs as uid 10001
@@ -45,7 +46,7 @@ if [ "$MODE" = "proxy" ]; then
   ENV_ARGS=(-e "HTTP_PROXY=http://proxy:8899" -e "HTTPS_PROXY=http://proxy:8899" -e "http_proxy=http://proxy:8899" -e "https_proxy=http://proxy:8899")
   SETUP_CMDS=(
     "docker network create --internal --subnet 172.30.99.0/24 $NET_NAME"
-    "docker run -d --rm --name $PROXY_NAME --network $NET_NAME --ip ${AR_PROXY_IP:-172.30.99.2} -v \"$PWD/proxy:/proxy:ro\" -e AR_ALLOW=\"${AR_ALLOW:-}\" -e AR_TASK_ID=$TASK_ID python:3.12-slim python /proxy/deny_proxy.py"
+    "docker run -d --rm --name $PROXY_NAME --network $NET_NAME --ip ${AR_PROXY_IP:-172.30.99.2} -v \"$HERE/../proxy:/proxy:ro\" -e AR_ALLOW=\"${AR_ALLOW:-}\" -e AR_TASK_ID=$TASK_ID python:3.12-slim python /proxy/deny_proxy.py"
   )
 else
   SETUP_CMDS=()
@@ -80,6 +81,14 @@ fi
 
 for c in ${SETUP_CMDS[@]+"${SETUP_CMDS[@]}"}; do [ -n "$c" ] && bash -c "$c"; done
 
+if [ "$MODE" = "proxy" ]; then
+  # Give the proxy a moment to bind before the sandbox starts knocking.
+  for _ in 1 2 3 4 5 6 7 8 9 10; do
+    docker logs "$PROXY_NAME" 2>&1 | grep -q listening && break
+    sleep 0.5
+  done
+fi
+
 set +e
 if command -v timeout >/dev/null 2>&1; then
   timeout --signal=KILL "$TIMEOUT_S" "${RUN_CMD[@]}"
@@ -90,8 +99,16 @@ RC=$?
 set -e
 
 if [ "$MODE" = "proxy" ]; then
+  # The proxy logs to stdout inside its own container. Grab it before the container
+  # disappears (--rm), otherwise the only evidence of the attempt is gone.
+  LOG_PATH="${AR_PROXY_LOG:-$WORK/egress.jsonl}"
+  mkdir -p "$(dirname "$LOG_PATH")"
+  docker logs "$PROXY_NAME" > "$LOG_PATH" 2>/dev/null || true
+  grep -v '^\[deny-proxy\]' "$LOG_PATH" > "$LOG_PATH.clean" 2>/dev/null || true
+  if [ -s "$LOG_PATH.clean" ]; then mv "$LOG_PATH.clean" "$LOG_PATH"; else rm -f "$LOG_PATH.clean"; fi
   docker stop "$PROXY_NAME" >/dev/null 2>&1 || true
   docker network rm "$NET_NAME" >/dev/null 2>&1 || true
+  echo "proxy log: $LOG_PATH ($(wc -l < "$LOG_PATH" 2>/dev/null | tr -d ' ') lines)" >&2
 fi
 
 echo "--- evidence ---" >&2

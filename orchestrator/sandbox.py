@@ -21,7 +21,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 RUNNER = REPO_ROOT / "sandbox" / "run.sh"
-ARTIFACT_NAMES = ("exec.json", "pip.log", "fsdiff.json", "egress.jsonl")
+ARTIFACT_NAMES = ("exec.json", "pip.log", "probe.json", "fsdiff.json", "egress.jsonl")
 
 
 class SandboxError(RuntimeError):

@@ -18,17 +18,43 @@ shows the *attempt* and the *denial* side by side.
 | Area | State |
 |---|---|
 | Repo scaffold, LICENSE, docs, cost log | done before kickoff |
-| Sandbox image + runner + egress proxy | scaffolded before kickoff, **first verified run on the VM still pending** |
+| Sandbox image + runner + egress proxy | **first real run verified 04.11.** locally (Docker 29.5, colima, linux/amd64) — see below |
 | Inference client (Vultr Serverless Inference) | scaffolded, key not yet provisioned |
 | Orchestrator: sandbox dispatch + evidence collection | built 03.11., 7/7 tests green against a stub runner |
 | Orchestrator: verdict (rules + grounded model path) | built 04.11., 12/12 tests green |
-| API (POST /tasks, GET /runs, artifacts) | built 04.11., 8/8 tests green |
+| API (POST /tasks, GET /runs, artifacts) | built 04.11., 8/8 tests green, end-to-end run green |
 | UI wired to the API | not started |
-| Deployment on Vultr, first real container run | **blocked: VM not provisioned yet** |
+| Deployment on Vultr, public demo URL | **blocked: VM not provisioned yet** |
 
 See [`docs/provenance.md`](docs/provenance.md) for the file-by-file record of what existed
 before the event and what was built during it. That distinction is a rule of this hackathon,
 so it is tracked explicitly rather than asserted.
+
+## Verified runs
+
+Every claim below was observed, not designed. Anything not in this table is unproven.
+
+**2026-11-04 · Docker 29.5.2 (colima, linux/amd64) · `sample_pkg-0.1.0` in proxy mode**
+
+| Signal | Observed |
+|---|---|
+| write outside the work dir (`/opt/ar-probe`) | `OSError`, read-only root filesystem |
+| egress to `collector.invalid` | 2 × `403` at the deny proxy, logged with target host |
+| read a decoy SSH key | `FileNotFoundError` — the path does not exist in the sandbox |
+| detached child process | **spawned, not blocked** — see below |
+| container after the run | gone, `docker ps` empty, network removed |
+| verdict | `high`, rule-based, no model involved |
+| wall clock | 18 s from POST to verdict |
+
+Two honest limitations from that run:
+
+- **A detached child process is not prevented.** `--pids-limit` caps how many processes exist,
+  not whether one may be spawned. The report says `spawn=ok`; the verdict does not pretend
+  otherwise. Pid namespaces keep it inside the container, which is the property that matters,
+  but "cannot start a process" would be a lie.
+- **The build hook's self-report is spoofable.** `probe.json` is written by the process under
+  test. It is informational only; severity comes from the proxy log and the filesystem diff,
+  which that process cannot write to.
 
 ## Architecture
 
