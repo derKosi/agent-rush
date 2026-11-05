@@ -134,3 +134,55 @@ def check(resolved, *, enabled=None, url=None, timeout=8, fetch=None):
                             "count": len(unique), "vulns": unique[:8],
                             "max_score": max(scores) if scores else None})
     return results
+
+
+# --- how far behind is it? -------------------------------------------------------------
+# A dependency can be perfectly fine and still three years old. That is not a
+# vulnerability, but it is the thing a reviewer wants to see first, and it is cheap:
+# one request to PyPI's JSON API per artifact, no key.
+
+LATEST_CACHE = {}
+
+
+def latest_version(name, timeout=6, fetch=None):
+    if name in LATEST_CACHE:
+        return LATEST_CACHE[name]
+    fetch = fetch or _get_json
+    try:
+        data = fetch(f"https://pypi.org/pypi/{name}/json", timeout)
+        value = (data.get("info") or {}).get("version")
+    except Exception:  # noqa: BLE001 - offline is not an error, it is "unknown"
+        value = None
+    LATEST_CACHE[name] = value
+    return value
+
+
+def _get_json(url, timeout):
+    with urllib.request.urlopen(url, timeout=timeout) as resp:
+        return json.loads(resp.read().decode("utf-8", "replace"))
+
+
+def _version_key(text):
+    parts = []
+    for chunk in str(text).replace("-", ".").split("."):
+        parts.append(int(chunk) if chunk.isdigit() else 0)
+    return tuple(parts)
+
+
+def outdated(resolved, *, enabled=None, fetch=None, timeout=6):
+    """Artifacts whose version is behind the newest release on PyPI."""
+    if enabled is None:
+        enabled = os.environ.get("AR_OUTDATED_CHECK", "on").lower() != "off"
+    if not enabled:
+        return []
+    out = []
+    for item in resolved:
+        name, version = parse_artifact(item.get("file", ""))
+        if not name or not version:
+            continue
+        newest = latest_version(name, timeout=timeout, fetch=fetch)
+        if not newest:
+            continue
+        if _version_key(version) < _version_key(newest):
+            out.append({"package": name, "version": version, "latest": newest})
+    return out

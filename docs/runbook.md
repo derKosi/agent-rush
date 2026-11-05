@@ -90,6 +90,31 @@ Caddy läuft davor und ist bereits aktiv; die öffentliche URL ist `http://<ip>/
 Für TLS ohne Domain: Instanz als `203.0.113.10.sslip.io` benennen und in `deploy/Caddyfile`
 `:80` durch diesen Hostnamen ersetzen.
 
+## 6b. Selbsttest und Quoten
+
+Ein Befehl beantwortet „läuft das noch?" — erst die Unit-Suiten, dann drei echte Läufe
+(sauber, veraltet, verwundbar) gegen die Instanz:
+
+```bash
+bash tools/selftest.sh                       # nur Suiten
+bash tools/selftest.sh http://127.0.0.1:8080 # Suiten + drei echte Läufe
+```
+
+Für den Dauerbetrieb als Cron, damit ein kaputter Deploy nicht tagelang unbemerkt bleibt:
+
+```cron
+0 6 * * * cd /opt/agent-rush && bash tools/selftest.sh http://127.0.0.1:8080 >> /var/log/agent-rush-selftest.log 2>&1
+```
+
+Die öffentliche Demo ist quotiert, damit ein Besucher nicht alles verbraucht:
+
+| Grenze | Wert | Variable |
+|---|---|---|
+| Läufe pro Stunde und IP | 12 | `AR_RATE_PER_HOUR` |
+| Läufe pro Tag und IP | 20 | `AR_IP_DAILY` |
+| Läufe pro Tag gesamt | 150 | `AR_DAILY_RUNS` |
+| gleichzeitig | 1 | `AR_MAX_CONCURRENT` |
+
 ## 7. Nach der Abgabe
 
 ```bash

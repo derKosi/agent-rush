@@ -121,7 +121,7 @@ def create_task(task: TaskIn, request: Request):
             detail=decision.reason,
             headers={"Retry-After": str(decision.retry_after)} if decision.retry_after else None,
         )
-    GUARD.begin()
+    GUARD.begin(client_ip(request))
 
     run_id = STORE.new_id()
     STORE.create(run_id, {"task": task.model_dump()})
@@ -161,7 +161,7 @@ def create_batch(payload: BatchIn, request: Request):
             detail=decision.reason,
             headers={"Retry-After": str(decision.retry_after)} if decision.retry_after else None,
         )
-    GUARD.begin()
+    GUARD.begin(client_ip(request))
 
     batch_id = BATCHES.new_id()
     BATCHES.create(batch_id, {"packages": [str(p) for p in paths],

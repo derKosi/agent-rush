@@ -240,10 +240,12 @@ def execute(store, run_id, package_path, question=None, *, egress_mode="none",
                 task_id=run_id, timeout_s=max(120, current_timeout),
             )
             vulns = reputation.check(resolved.get("resolved") or [])
+            behind = reputation.outdated(resolved.get("resolved") or [])
             evidence["dependencies"] = {
                 "declared": declared,
                 "resolved": resolved.get("resolved") or [],
                 "vulnerabilities": vulns,
+                "outdated": behind,
                 "exit_code": resolved.get("exit_code"),
                 "duration_s": resolved.get("duration_s"),
                 "log_tail": (resolved.get("log_tail") or "")[-1200:],

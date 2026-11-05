@@ -200,6 +200,13 @@ def rule_findings(evidence):
                          f"({item['error']}); treat its dependency as unchecked.",
             })
 
+    for item in dep.get("outdated") or []:
+        out.append({
+            "severity": "low", "source": "dependencies",
+            "claim": f"{item['package']} {item['version']} is behind the current release "
+                     f"{item['latest']}. Not a vulnerability, but worth a look.",
+        })
+
     if dep.get("declared") and not dep.get("resolved"):
         out.append({
             "severity": "medium", "source": "dependencies",

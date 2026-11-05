@@ -31,16 +31,19 @@ class Decision:
 
 
 class Guard:
-    def __init__(self, per_hour=12, max_concurrent=1, daily_cap=150, token=""):
+    def __init__(self, per_hour=12, max_concurrent=1, daily_cap=150, token="",
+                 ip_daily_cap=20):
         self.per_hour = per_hour
         self.max_concurrent = max_concurrent
         self.daily_cap = daily_cap
+        self.ip_daily_cap = ip_daily_cap
         self.token = token.strip()
         self._lock = threading.Lock()
         self._hits = defaultdict(deque)
         self._active = 0
         self._day = time.strftime("%Y-%m-%d", time.gmtime())
         self._runs_today = 0
+        self._per_ip_day = {}
 
     @classmethod
     def from_env(cls):
@@ -49,6 +52,7 @@ class Guard:
             max_concurrent=int(os.environ.get("AR_MAX_CONCURRENT", "1")),
             daily_cap=int(os.environ.get("AR_DAILY_RUNS", "150")),
             token=os.environ.get("AR_API_TOKEN", ""),
+            ip_daily_cap=int(os.environ.get("AR_IP_DAILY", "20")),
         )
 
     def _roll_day(self):
@@ -57,6 +61,7 @@ class Guard:
             self._day = today
             self._runs_today = 0
             self._hits.clear()
+            self._per_ip_day.clear()
 
     def check(self, ip, provided_token=""):
         """Decide whether this request may start a run. Never raises."""
@@ -68,6 +73,11 @@ class Guard:
 
             if self._runs_today >= self.daily_cap:
                 return Decision(False, "daily run cap reached", 3600)
+
+            # One visitor must not be able to eat the day. The hourly limit alone
+            # allows 12 * 24 runs; this is the actual budget per address.
+            if self._per_ip_day.get(ip, 0) >= self.ip_daily_cap:
+                return Decision(False, "your daily quota for this demo is used up", 3600)
 
             now = time.monotonic()
             window = self._hits[ip]
@@ -83,10 +93,11 @@ class Guard:
             window.append(now)
             return Decision(True)
 
-    def begin(self):
+    def begin(self, ip="unknown"):
         with self._lock:
             self._active += 1
             self._runs_today += 1
+            self._per_ip_day[ip] = self._per_ip_day.get(ip, 0) + 1
 
     def end(self):
         with self._lock:
@@ -99,6 +110,7 @@ class Guard:
                 "max_concurrent": self.max_concurrent,
                 "daily_cap": self.daily_cap,
                 "runs_today": self._runs_today,
+                "ip_daily_cap": self.ip_daily_cap,
                 "active": self._active,
                 "token_required": bool(self.token),
             }

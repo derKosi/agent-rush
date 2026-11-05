@@ -32,6 +32,17 @@ def test_rate_limit_per_ip():
     assert g.check("2.2.2.2").allowed, "a different ip must not be punished"
 
 
+def test_per_ip_daily_quota():
+    g = Guard(per_hour=100, max_concurrent=100, daily_cap=1000, ip_daily_cap=2)
+    for _ in range(2):
+        assert g.check("1.1.1.1").allowed
+        g.begin("1.1.1.1")
+        g.end()
+    blocked = g.check("1.1.1.1")
+    assert not blocked.allowed and "quota" in blocked.reason, blocked.reason
+    assert g.check("2.2.2.2").allowed, "another visitor must still get in"
+
+
 def test_concurrency_cap():
     g = Guard(per_hour=10, max_concurrent=1)
     assert g.check("1.1.1.1").allowed
@@ -75,6 +86,7 @@ def test_snapshot():
 def main() -> int:
     print("guard")
     check("per-ip rate limit", test_rate_limit_per_ip)
+    check("per-ip daily quota", test_per_ip_daily_quota)
     check("concurrency cap", test_concurrency_cap)
     check("daily cap", test_daily_cap)
     check("token when configured", test_token_required_when_configured)
