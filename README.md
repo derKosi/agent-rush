@@ -55,6 +55,19 @@ Every claim below was observed, not designed. Anything not in this table is unpr
 | rejected claims | 0 |
 | model noticed the gap | it stated in its own summary that no filesystem diff was collected |
 
+Model choice, measured on 05.11. with the real evidence payload:
+
+| Model / flags | Latency | Reasoning tokens |
+|---|---|---|
+| `glm-5.2`, default | 7.0 s | 901 |
+| `glm-5.2`, `reasoning_effort=low` | 2.4 s | 119 |
+| `glm-5.2`, `enable_thinking=false` | **2.2 s** | **0** |
+| `glm-5.3-flash`, default | 5.4 s | 960 |
+
+The client sends `chat_template_kwargs.enable_thinking=false` by default (`AR_REASONING=on`
+restores it). For a structured classification task the thinking tokens bought nothing and cost
+three seconds per run.
+
 Found while wiring the model: `glm-5.2` is a **reasoning** model, and reasoning tokens are billed
 against `max_tokens`. With a short budget it returned an empty string and `finish_reason: length`,
 which the client used to hand back as a successful answer. It now retries once with four times the

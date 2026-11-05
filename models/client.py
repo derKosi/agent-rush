@@ -57,7 +57,7 @@ def list_models():
     return _request("/models")
 
 
-def chat(messages, model=None, temperature=0.2, max_tokens=4096, timeout=120):
+def chat(messages, model=None, temperature=0.2, max_tokens=4096, timeout=120, extra=None):
     """One chat completion. Returns the assistant message text.
 
     GLM 5.2 in this catalog is a reasoning model: reasoning tokens are billed
@@ -71,6 +71,13 @@ def chat(messages, model=None, temperature=0.2, max_tokens=4096, timeout=120):
             "no model configured: set AR_MODEL to an id from list_models()"
         )
 
+    # Measured 05.11. with the real evidence payload: glm-5.2 spends ~900 tokens
+    # thinking before writing a character. With enable_thinking off it answers in
+    # 2.2s instead of 7.0s with the same structure; both catalog models accept the
+    # flag (5.3-flash ignores it, no error). AR_REASONING=on restores the default.
+    if extra is None and os.environ.get("AR_REASONING", "").lower() != "on":
+        extra = {"chat_template_kwargs": {"enable_thinking": False}}
+
     budget = max_tokens
     for attempt in (1, 2):
         payload = {
@@ -79,6 +86,8 @@ def chat(messages, model=None, temperature=0.2, max_tokens=4096, timeout=120):
             "temperature": temperature,
             "max_tokens": budget,
         }
+        if extra:
+            payload.update(extra)
         data = _request("/chat/completions", method="POST", payload=payload, timeout=timeout)
         try:
             choice = data["choices"][0]
