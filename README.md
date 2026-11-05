@@ -39,8 +39,9 @@ so it is tracked explicitly rather than asserted.
 
 *The live instance. One run as a document: risk, the model that judged it, the findings that
 matter (informational notes folded away), and a dependency tab with a gauge against the block
-threshold plus one row per artifact — version, hash, advisory count, state. The account chip
-is demo data and says so.*
+threshold plus one row per artifact — version, hash, advisory count, state. The rail on the
+left is real history: five runs across three packages. The account chip is demo data and says
+so.*
 
 ## Verified runs
 

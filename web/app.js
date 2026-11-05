@@ -259,6 +259,10 @@ function renderEvidence(run) {
 
 async function selectRun(id) {
   currentId = id;
+  // Keep the URL in sync so a run stays linkable and reload-safe.
+  const url = new URL(location.href);
+  url.searchParams.set('run', id);
+  history.replaceState(null, '', url);
   clearInterval(pollTimer);
   try {
     const run = await getJSON(`runs/${id}`);
@@ -348,6 +352,8 @@ getJSON('health').then((h) => {
 }).catch(() => { $('model-chip').textContent = 'offline'; });
 
 loadRuns().then(() => {
+  const wanted = new URLSearchParams(location.search).get('run');
+  if (wanted) { selectRun(wanted); return; }
   const first = document.querySelector('#run-list li:not(.empty)');
   if (first) first.click();
 });

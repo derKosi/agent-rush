@@ -129,18 +129,19 @@ EOF
 )
 
 
-# A fictional product line for the demo: same package, three versions, one bad release.
-# The name is free on both PyPI and npm (checked), so nobody confuses it with something real.
+# Fictional packages for the demo. The names are free on PyPI and npm (checked), so nobody
+# confuses them with something real, and they read like things a team would actually install.
 build_product() {
-  local name="$1" version="$2" requires="$3"
-  mkdir -p "$BUILD/$name-$version"
-  printf 'from setuptools import setup\n\nsetup(\n    name="%s",\n    version="%s",\n    description="Harborline analytics toolkit",\n    install_requires=["%s"],\n    packages=["harborline"],\n)\n' \
-    "$name" "$version" "$requires" > "$BUILD/$name-$version/setup.py"
-  # A package with actual code, so a verdict talks about the dependency rather than
-  # about the fixture being empty.
-  mkdir -p "$BUILD/$name-$version/harborline"
-  cat > "$BUILD/$name-$version/harborline/__init__.py" <<'PYMOD'
-"""Harborline analytics toolkit."""
+  local name="$1" version="$2" requires="$3" summary="$4"
+  local module="${name//-/_}"
+  mkdir -p "$BUILD/$name-$version/$module"
+  printf 'from setuptools import setup\n\nsetup(\n    name="%s",\n    version="%s",\n    description="%s",\n    install_requires=["%s"],\n    packages=["%s"],\n)\n' \
+    "$name" "$version" "$summary" "$requires" "$module" > "$BUILD/$name-$version/setup.py"
+  printf 'Metadata-Version: 2.1\nName: %s\nVersion: %s\nRequires-Dist: %s\nSummary: %s\n\nInternal build.\n' \
+    "$name" "$version" "$requires" "$summary" > "$BUILD/$name-$version/PKG-INFO"
+  printf '%s\n' "$summary" > "$BUILD/$name-$version/README.md"
+  cat > "$BUILD/$name-$version/$module/__init__.py" <<'PYMOD'
+"""Small utilities. Nothing clever."""
 
 __version__ = "0.0.0"
 
@@ -161,9 +162,6 @@ def summarise(rows, key="amount"):
     total = sum(values)
     return {"total": total, "mean": total / len(values), "count": len(values)}
 PYMOD
-  printf 'Metadata-Version: 2.1\nName: %s\nVersion: %s\nRequires-Dist: %s\nSummary: Harborline analytics toolkit\n\nInternal build of Harborline.\n' \
-    "$name" "$version" "$requires" > "$BUILD/$name-$version/PKG-INFO"
-  printf 'Harborline analytics toolkit.\n' > "$BUILD/$name-$version/README.md"
   COPYFILE_DISABLE=1 tar czf "$HERE/$name-$version.tar.gz" --exclude '._*' \
     -C "$BUILD" "$name-$version"
   echo "built: $name-$version.tar.gz"
@@ -281,7 +279,11 @@ build_pkg sample_pkg_node 0.1.0 node
 build_pkg sample_pkg_vuln 0.1.0 vuln
 build_pkg sample_pkg_stale 0.1.0 stale
 
-# The demo story: 2.8.0 is clean, 2.9.0 drifts a minor behind, 2.9.1 pulls in a vulnerable dep.
-build_product harborline 2.8.0 "six>=1.16"
-build_product harborline 2.9.0 "six==1.15.0"
-build_product harborline 2.9.1 "urllib3==1.24.1"
+# Two ordinary packages a team might have, then the release line that goes wrong.
+build_product left-pad-again 1.2.0 "six>=1.16" "Left-pad, again. You know exactly why."
+build_product blazingly-fast-utils 0.9.3 "six==1.15.0" "Blazingly fast. Allegedly."
+
+# The story: 2.8.0 is clean, 2.9.0 drifts a minor behind, 2.9.1 pulls in a vulnerable dep.
+build_product harborline 2.8.0 "six>=1.16" "Harborline analytics toolkit"
+build_product harborline 2.9.0 "six==1.15.0" "Harborline analytics toolkit"
+build_product harborline 2.9.1 "urllib3==1.24.1" "Harborline analytics toolkit"
