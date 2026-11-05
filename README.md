@@ -129,6 +129,21 @@ Two honest limitations from that run:
   test. It is informational only; severity comes from the proxy log and the filesystem diff,
   which that process cannot write to.
 
+## Using it in a pipeline
+
+`tools/triage.py` is the front door for a CI step: it posts a batch, waits, prints a table and
+exits non-zero when the worst package hits `--fail-on`. Verified against the public URL:
+
+```
+$ python3 tools/triage.py fixtures/*.tar.gz --base http://45.77.143.94 --fail-on high
+batch b20261105T174736-d12d82  worst=high  fail_on=high
+sample_pkg-0.1.0.tar.gz            high    12
+sample_pkg_injected-0.1.0.tar.gz   high    14
+FAILED
+```
+
+Example workflow step and the JSON shape: [`docs/ci.md`](docs/ci.md).
+
 ## No CI, by decision
 
 This repository has **no GitHub Actions workflows**, and that is on purpose. Nothing runs on

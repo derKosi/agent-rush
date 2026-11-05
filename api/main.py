@@ -12,7 +12,7 @@ import os
 import sys
 import threading
 from pathlib import Path
-from typing import Literal, Optional
+from typing import List, Literal, Optional
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse
@@ -24,12 +24,14 @@ if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
 from api.guard import Guard                            # noqa: E402
+from orchestrator import batch as batch_mod            # noqa: E402
 from orchestrator import pipeline                      # noqa: E402
 from orchestrator.run_store import RunStore, RunStoreError  # noqa: E402
 from models import client as inference                 # noqa: E402
 
 RUNS_DIR = Path(os.environ.get("AR_RUNS_DIR", REPO / "work" / "runs")).resolve()
 STORE = RunStore(RUNS_DIR)
+BATCHES = batch_mod.BatchStore(RUNS_DIR.parent / "batches")
 
 # A task may only name a package inside these roots. Without this, the endpoint
 # would happily execute anything readable by the service user.
@@ -43,6 +45,13 @@ def client_ip(request: Request) -> str:
     """Caddy is the only ingress and sets X-Real-IP; trust it, fall back to the peer."""
     return (request.headers.get("x-real-ip")
             or (request.client.host if request.client else "unknown"))
+
+
+class BatchIn(BaseModel):
+    packages: List[str] = Field(..., min_length=1, max_length=10)
+    question: Optional[str] = None
+    egress_mode: Literal["none", "proxy"] = "proxy"
+    fail_on: Literal["none", "low", "medium", "high"] = "high"
 
 
 class TaskIn(BaseModel):
@@ -117,6 +126,83 @@ def create_task(task: TaskIn, request: Request):
     STORE.create(run_id, {"task": task.model_dump()})
     threading.Thread(target=_dispatch, args=(run_id, package, task), daemon=True).start()
     return {"id": run_id, "state": "queued"}
+
+
+def _batch_report(record):
+    threshold = record.get("fail_on", "high")
+    worst = record.get("worst")
+    failed = (threshold != "none"
+              and batch_mod.RISK_ORDER.get(str(worst), -1) >= batch_mod.RISK_ORDER[threshold])
+    return {
+        "batch": record["id"],
+        "state": record.get("state"),
+        "worst": worst,
+        "fail_on": threshold,
+        "failed": failed,
+        "packages": record.get("results", []),
+    }
+
+
+@app.post("/batch", status_code=202)
+def create_batch(payload: BatchIn, request: Request):
+    paths = [resolve_package(pkg) for pkg in payload.packages]
+
+    token = ""
+    auth = request.headers.get("authorization", "")
+    if auth.lower().startswith("bearer "):
+        token = auth[7:].strip()
+    token = token or request.headers.get("x-api-token", "").strip()
+
+    decision = GUARD.check(client_ip(request), token)
+    if not decision.allowed:
+        raise HTTPException(
+            status_code=429 if "token" not in decision.reason else 401,
+            detail=decision.reason,
+            headers={"Retry-After": str(decision.retry_after)} if decision.retry_after else None,
+        )
+    GUARD.begin()
+
+    batch_id = BATCHES.new_id()
+    BATCHES.create(batch_id, {"packages": [str(p) for p in paths],
+                              "fail_on": payload.fail_on,
+                              "question": payload.question})
+
+    def _run():
+        try:
+            batch_mod.run_batch(
+                STORE, BATCHES, batch_id, paths,
+                question=payload.question,
+                egress_mode=payload.egress_mode,
+                chat=_chat(),
+                model=os.environ.get("AR_MODEL") or None,
+                timeout_s=int(os.environ.get("AR_TIMEOUT_S", "180")),
+            )
+        finally:
+            GUARD.end()
+
+    threading.Thread(target=_run, daemon=True).start()
+    return {"id": batch_id, "state": "queued", "packages": len(paths)}
+
+
+@app.get("/batches")
+def list_batches(limit: int = 20):
+    return {"batches": BATCHES.list(limit=max(1, min(limit, 100)))}
+
+
+@app.get("/batches/{batch_id}")
+def get_batch(batch_id: str):
+    try:
+        return BATCHES.read(batch_id)
+    except (FileNotFoundError, ValueError) as exc:
+        raise HTTPException(404, "unknown batch") from exc
+
+
+@app.get("/batches/{batch_id}/report")
+def get_batch_report(batch_id: str):
+    try:
+        return _batch_report(BATCHES.read(batch_id))
+    except (FileNotFoundError, ValueError) as exc:
+        raise HTTPException(404, "unknown batch") from exc
 
 
 @app.get("/runs")
