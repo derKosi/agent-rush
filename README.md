@@ -33,6 +33,11 @@ See [`docs/provenance.md`](docs/provenance.md) for the file-by-file record of wh
 before the event and what was built during it. That distinction is a rule of this hackathon,
 so it is tracked explicitly rather than asserted.
 
+![Agent Rush: one run, plan and verdict visible](docs/screenshots/ui-run.png)
+
+*A real run on the Vultr VM: the plan the model chose, the verdict with the injection
+badge, and the evidence behind it.*
+
 ## Verified runs
 
 Every claim below was observed, not designed. Anything not in this table is unproven.

@@ -89,3 +89,10 @@ one verified containment moment recorded in the README with the exact observatio
 - [x] Demo application platform + application URL
 - [x] README explains the Vultr architecture and the agent's use case
 - [ ] Containment moment in the video
+
+## Numbers for the form
+
+- 64 tests, most of them runnable without Docker
+- 3 fixtures: honest probe, prompt-injected, broken build
+- 12 slides, 1920×1080 cover
+- Public instance: `vc2-1c-2gb`, Frankfurt, ~$0.014/h
