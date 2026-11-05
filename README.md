@@ -22,6 +22,7 @@ shows the *attempt* and the *denial* side by side.
 | Repo scaffold, LICENSE, docs, cost log | done before kickoff |
 | Sandbox image + runner + egress proxy | **first real run verified 04.11.** locally (Docker 29.5, colima, linux/amd64) — see below |
 | Inference client (Vultr Serverless Inference) | scaffolded, key not yet provisioned |
+| Planner (the model picks which probes run) | built 05.11., 8/8 tests |
 | Orchestrator: sandbox dispatch + evidence collection | built 03.11., 7/7 tests green against a stub runner |
 | Orchestrator: verdict (rules + grounded model path) | built 04.11., 12/12 tests green |
 | API (POST /tasks, GET /runs, artifacts) | built 04.11., 8/8 tests green, end-to-end run green |

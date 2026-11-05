@@ -9,6 +9,7 @@ from __future__ import annotations
 import time
 from pathlib import Path
 
+from . import planner
 from . import sandbox
 from .verdict import egress_summary, verdict, _read_json
 
@@ -44,6 +45,15 @@ def execute(store, run_id, package_path, question=None, *, egress_mode="none",
             timeout_s=180, chat=None, model=None):
     """Run one task. Never raises: a failure is a stored state, not a crash."""
     store.update(run_id, state="running", started=_now())
+
+    # Plan first: the model picks the probes, the sandbox runs only those.
+    try:
+        plan_result = planner.plan(package_path, question=question, chat=chat, model=model)
+    except Exception as exc:  # noqa: BLE001
+        plan_result = {"probes": list(planner.ALL_PROBES), "source": "default",
+                       "reason": f"planner failed: {type(exc).__name__}: {exc}", "rejected": []}
+    store.update(run_id, plan=plan_result)
+
     try:
         result = sandbox.run_package(
             Path(package_path),
@@ -51,6 +61,7 @@ def execute(store, run_id, package_path, question=None, *, egress_mode="none",
             task_id=run_id,
             timeout_s=timeout_s,
             egress_mode=egress_mode,
+            probes=planner.probes_env(plan_result),
         )
     except Exception as exc:  # noqa: BLE001 - store it, show it, do not swallow it
         return store.update(run_id, state="failed", finished=_now(),

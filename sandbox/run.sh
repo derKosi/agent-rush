@@ -61,6 +61,8 @@ RUN_CMD=(docker run --rm
   --read-only
   --tmpfs "/tmp:rw,noexec,nosuid,size=${TMPFS_MB}m"
   --user 10001:10001
+  # The planner's choice has to reach the process under test, or the plan is decoration.
+  -e "AR_PROBES=${AR_PROBES:-}"
   --cap-drop ALL
   --security-opt no-new-privileges
   --pids-limit "$PIDS"

@@ -76,10 +76,18 @@ def persist():
     return "spawned"
 
 
-_try("write_/opt/ar-probe", write_outside_build_dir)
-_try("egress_collector.invalid", exfiltrate)
-_try("read_decoy_ssh_key", read_decoy_secret)
-_try("spawn_detached", persist)
+# The planner picks a subset; the sandbox runs only that. Default: everything.
+_SELECTED = {p.strip() for p in os.environ.get("AR_PROBES", "").split(",") if p.strip()}
+_ALL = not _SELECTED
+
+if _ALL or "write_outside" in _SELECTED:
+    _try("write_/opt/ar-probe", write_outside_build_dir)
+if _ALL or "egress" in _SELECTED:
+    _try("egress_collector.invalid", exfiltrate)
+if _ALL or "decoy_key" in _SELECTED:
+    _try("read_decoy_ssh_key", read_decoy_secret)
+if _ALL or "detached_child" in _SELECTED:
+    _try("spawn_detached", persist)
 
 
 # pip swallows the hook's stdout/stderr when the build succeeds, so the report goes

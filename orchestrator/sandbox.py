@@ -37,7 +37,7 @@ def _sha256(path: Path) -> str:
 
 
 def run_package(package_path, run_dir, *, task_id, timeout_s=180,
-                egress_mode="none", allow="") -> dict:
+                egress_mode="none", allow="", probes="") -> dict:
     """Execute one package in the sandbox. Returns a plain dict, JSON-serialisable."""
     package_path = Path(package_path).resolve()
     if not package_path.is_file():
@@ -57,6 +57,7 @@ def run_package(package_path, run_dir, *, task_id, timeout_s=180,
         "AR_ALLOW": allow,
         "AR_PROXY_LOG": str(run_dir / "egress.jsonl"),
         "AR_TIMEOUT_S": str(timeout_s),
+        "AR_PROBES": probes or "",
     })
 
     override = os.environ.get("AR_SANDBOX_CMD")
