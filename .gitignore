@@ -19,3 +19,7 @@ build/
 # local notes
 .DS_Store
 notes/
+
+# screen recordings are raw material, not source
+recordings/
+*.mov

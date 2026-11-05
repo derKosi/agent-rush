@@ -5,7 +5,7 @@ Written the day before submission, so it describes what exists rather than what 
 ## Where it stands
 
 Two runtimes (Python sdist, npm tarball), three execution phases (build, import, resolve),
-one evidence model the sandboxed process cannot write to. 89 tests, six fixtures, a CLI that
+one evidence model the sandboxed process cannot write to. 96 tests, thirteen fixtures, a CLI that
 exits non-zero, and a verdict whose risk floor comes from rules rather than from the model.
 
 Known limits, stated in the README: dependencies are listed and checked against OSV but
