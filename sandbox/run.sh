@@ -70,6 +70,7 @@ RUN_CMD=(docker run --rm
   # The planner's choice has to reach the process under test, or the plan is decoration.
   -e "AR_PROBES=${AR_PROBES:-}"
   -e "AR_MODE=${AR_MODE:-pip}"
+  -e "AR_RUNTIME=${AR_RUNTIME:-python}"
   -e "AR_NET=${AR_NET:-none}"
   --cap-drop ALL
   --security-opt no-new-privileges

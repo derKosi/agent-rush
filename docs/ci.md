@@ -110,7 +110,7 @@ This is not a general supply-chain firewall. It tests **one artifact, in two pha
 
 | | |
 |---|---|
-| Artifact | Python **sdist** (`.tar.gz` with a `setup.py`) |
+| Artifact | Python **sdist** (`.tar.gz` with `setup.py`) or **npm tarball** |
 | Phase 1 | `pip install` runs the build hook, with the chosen probes |
 | Phase 2 | the installed distribution is imported, top-level modules only |
 | Observed | egress attempts, filesystem changes, process result, spawns |

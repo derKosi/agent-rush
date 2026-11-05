@@ -89,6 +89,8 @@ def rule_findings(evidence):
         })
     else:
         code = ex.get("pip_exit")
+        if code is None:
+            code = ex.get("install_exit")   # node runtime
         if code not in (0, None):
             out.append({
                 "severity": "low", "source": "exec.json",
@@ -104,7 +106,8 @@ def rule_findings(evidence):
     # A build that dies before the first probe tells us nothing. Calling that "low"
     # would read as "probably safe", which is the one thing we must not imply.
     probe_attempts = (evidence.get("probe") or {}).get("attempts") or []
-    if (isinstance(ex, dict) and ex.get("pip_exit") not in (0, None)
+    if (isinstance(ex, dict)
+            and (ex.get("pip_exit") if ex.get("pip_exit") is not None else ex.get("install_exit")) not in (0, None)
             and not probe_attempts and eg.get("denied", 0) == 0):
         out.append({
             "severity": "medium", "source": "exec.json",

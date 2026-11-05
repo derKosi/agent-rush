@@ -53,6 +53,13 @@ We also publish the limits. A detached child process is **not** prevented by thi
 report says `spawned`, because saying otherwise would be a lie. What is prevented is the process
 escaping the container, and that is the property the design is built on.
 
+### Two runtimes, one evidence layer
+
+Python sdists and npm tarballs go through the same two passes — install hook, then import —
+in the same container. The runtime is detected from the archive contents, and the evidence
+(proxy log, filesystem diff, process result) is identical for both, because it never cared
+which language produced it.
+
 ### Built on Vultr
 
 - **Cloud Compute** (`vc2-1c-2gb`, Frankfurt) runs the web app, the orchestrator and the Docker
@@ -97,7 +104,7 @@ one verified containment moment recorded in the README with the exact observatio
 
 ## Numbers for the form
 
-- 78 tests, most of them runnable without Docker
-- 5 fixtures: honest, prompt-injected, broken, hostile-at-import, with dependencies
+- 82 tests, most of them runnable without Docker
+- 6 fixtures: honest, prompt-injected, broken, hostile-at-import, with dependencies, npm
 - 12 slides, 1920×1080 cover
 - Public instance: `vc2-1c-2gb`, Frankfurt, ~$0.014/h

@@ -16,6 +16,30 @@ T0=$(date +%s)
 # --no-deps:            the dependency graph is not what we are testing
 # --no-build-isolation: the hook must run in this environment, not a network-fetched one
 # --no-build-isolation also means the package's setup.py imports happen here, on purpose.
+# Mode "import" for node: install, then require each installed top-level package.
+if [ "${AR_MODE:-pip}" = "import" ] && [ "${AR_RUNTIME:-python}" = "node" ]; then
+  export npm_config_cache=/tmp/npm-cache
+  set +e
+  npm install --prefix /work/app --no-audit --no-fund --loglevel=warn \
+    /work/pkg.tar.gz > /work/out/pip.log 2>&1
+  INSTALL_EXIT=$?
+  node /usr/local/bin/import_pass.js > /work/out/import.log 2>&1 || true
+  set -e
+  cat /work/out/pip.log /work/out/import.log
+  cat > /work/out/exec.json <<EOF
+{
+  "started": "$STARTED",
+  "finished": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+  "duration_s": $(( $(date +%s) - T0 )),
+  "mode": "import",
+  "runtime": "node",
+  "install_exit": $INSTALL_EXIT,
+  "artifact": "import.log"
+}
+EOF
+  exit 0
+fi
+
 # Mode "import": install the package, then import it. A payload that only fires on
 # first use never shows up in the build log; this pass is where it shows up.
 if [ "${AR_MODE:-pip}" = "import" ]; then
@@ -88,6 +112,32 @@ if [ "${AR_MODE:-pip}" = "script" ]; then
   "duration_s": $(( $(date +%s) - T0 )),
   "mode": "script",
   "script_exit": $SCRIPT_EXIT
+}
+EOF
+  exit 0
+fi
+
+# Node packages run their hook on `npm install`, exactly like setup.py on pip. Same
+# container, same limits, same probes -- only the command differs.
+if [ "${AR_RUNTIME:-python}" = "node" ]; then
+  export npm_config_cache=/tmp/npm-cache
+  export npm_config_audit=false
+  export npm_config_fund=false
+  set +e
+  npm install --prefix /work/app --no-audit --no-fund --loglevel=warn \
+    /work/pkg.tar.gz > /work/out/install.log 2>&1
+  INSTALL_EXIT=$?
+  set -e
+  cat /work/out/install.log
+  cat > /work/out/exec.json <<EOF
+{
+  "started": "$STARTED",
+  "finished": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+  "duration_s": $(( $(date +%s) - T0 )),
+  "mode": "install",
+  "runtime": "node",
+  "install_exit": $INSTALL_EXIT,
+  "artifact": "install.log"
 }
 EOF
   exit 0

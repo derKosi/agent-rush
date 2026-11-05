@@ -131,6 +131,23 @@ EOF
 build_pkg() {
   local name="$1" version="$2" inject="$3"
   mkdir -p "$BUILD/$name-$version"
+  if [ "$inject" = "node" ]; then
+    # npm tarballs have a single top-level directory called package/.
+    mkdir -p "$BUILD/$name-$version/package"
+    cp "$HERE/node_payload.js" "$BUILD/$name-$version/package/postinstall.js"
+    # A package needs an entry point or require() fails with MODULE_NOT_FOUND, which
+    # would look like a harness bug instead of a missing fixture detail.
+    printf 'module.exports = {};\n' > "$BUILD/$name-$version/package/index.js"
+    printf '{\n  "name": "sample-pkg-node",\n  "version": "%s",\n  "main": "index.js",\n  "description": "synthetic npm fixture",\n  "scripts": { "postinstall": "node postinstall.js" }\n}\n' \
+      "$version" > "$BUILD/$name-$version/package/package.json"
+    printf 'Synthetic probe package. Not a real library. See fixtures/make_fixture.sh.\n' \
+      > "$BUILD/$name-$version/package/README.md"
+    COPYFILE_DISABLE=1 tar czf "$HERE/$name-$version.tar.gz" --exclude '._*' \
+      -C "$BUILD/$name-$version" package
+    echo "built: $name-$version.tar.gz"
+    return
+  fi
+
   if [ "$inject" = "deps" ]; then
     printf 'from setuptools import setup\n\nsetup(name="sample-pkg-deps", version="%s",\n      description="synthetic fixture with declared dependencies",\n      install_requires=["six>=1.16"], py_modules=[])\n' \
       "$version" > "$BUILD/$name-$version/setup.py"
@@ -193,3 +210,4 @@ build_pkg sample_pkg_injected 0.1.0 yes
 build_pkg sample_pkg_broken 0.1.0 broken
 build_pkg sample_pkg_lazy 0.1.0 lazy
 build_pkg sample_pkg_deps 0.1.0 deps
+build_pkg sample_pkg_node 0.1.0 node

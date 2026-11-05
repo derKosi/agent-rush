@@ -25,11 +25,20 @@ ENV PIP_NO_CACHE_DIR=1 \
 # Unpinned on purpose: this image is throwaway per task, not a build cache.
 RUN pip install --no-cache-dir setuptools wheel
 
+# Two runtimes in one image: the harness is language-agnostic, only the install step and
+# the import step differ. Debian's nodejs is old but adequate -- we are not running a build.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends nodejs npm \
+ && rm -rf /var/lib/apt/lists/* \
+ && node --version && npm --version
+
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 COPY import_pass.py /usr/local/bin/import_pass.py
+COPY import_pass.js /usr/local/bin/import_pass.js
 RUN chmod 0555 /usr/local/bin/entrypoint.sh /usr/local/bin/import_pass.py \
  && python3 -c "import importlib.metadata as m; print(chr(10).join(sorted(d.metadata['Name'] or '' for d in m.distributions())))" \
-    > /usr/local/share/base_dists.txt
+    > /usr/local/share/base_dists.txt \
+ && ls /usr/lib/node_modules 2>/dev/null > /usr/local/share/base_node_modules.txt || true
 
 USER 10001:10001
 WORKDIR /work

@@ -13,6 +13,7 @@ from pathlib import Path
 
 from . import deps as deps_mod
 from . import planner
+from . import runtime as runtime_mod
 from . import recovery
 from . import sandbox
 from .verdict import egress_summary, verdict, _read_json
@@ -163,6 +164,9 @@ def execute(store, run_id, package_path, question=None, *, egress_mode="none",
         except Exception as exc:  # noqa: BLE001
             inspection = {"exit_code": None, "output": "", "error": str(exc)}
 
+    runtime = runtime_mod.detect(package_path)
+    store.update(run_id, runtime=runtime)
+
     attempts = []
     current_timeout = timeout_s
     while True:
@@ -174,6 +178,7 @@ def execute(store, run_id, package_path, question=None, *, egress_mode="none",
                 timeout_s=current_timeout,
                 egress_mode=egress_mode,
                 probes=planner.probes_env(plan_result),
+                runtime=runtime,
             )
         except Exception as exc:  # noqa: BLE001 - store it, show it, do not swallow it
             return store.update(run_id, state="failed", finished=_now(),
@@ -208,6 +213,7 @@ def execute(store, run_id, package_path, question=None, *, egress_mode="none",
                 Path(package_path), store.dir_for(run_id), task_id=run_id,
                 timeout_s=max(60, current_timeout // 2),
                 probes=planner.probes_env(plan_result),
+                runtime=runtime,
             )
             evidence["import_pass"] = {
                 "exit_code": imported.get("exit_code"),

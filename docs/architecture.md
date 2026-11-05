@@ -38,6 +38,12 @@ A third phase lists what the package would pull in. `Requires-Dist` is read from
 `PKG-INFO` as plain text — no execution — and the resulting requirements are fetched with
 `pip download --only-binary=:all:` into a separate container.
 
+The runtime is detected from the archive contents, not the file extension: a `package.json`
+without a Python project marker makes it an npm package, and everything else is treated as
+Python. The same two passes then run with a different command — `npm install` and `require()`
+instead of `pip install` and `import`. The evidence layer does not change, which was the
+point of building it language-neutral.
+
 Two deliberate choices:
 
 - **Network on.** This is the only phase that needs it, and it is a different container

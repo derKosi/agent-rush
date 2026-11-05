@@ -178,8 +178,8 @@ prop.
 
 | | |
 |---|---|
-| **Artifact** | Python **sdist** — a `.tar.gz` containing `setup.py` |
-| **Phase 1** | `pip install` runs the build hook, with the probes the planner chose |
+| **Artifact** | Python **sdist** (`.tar.gz` with `setup.py`) **or npm tarball** (`package/package.json`) |
+| **Phase 1** | `pip install` / `npm install` runs the install hook, with the probes the planner chose |
 | **Phase 2** | the installed distribution is imported, top-level modules only |
 | **Evidence** | egress attempts (proxy log), filesystem diff, process result, spawns |
 | **Dependencies** | declared ones are fetched as **wheels**, hashed and listed — **never executed** (`--only-binary=:all:`) |
@@ -188,12 +188,12 @@ prop.
 
 Other ecosystems have the same shape and need their own adapter — not shipped:
 
-| Ecosystem | Build-time hook | Would need |
+| Ecosystem | Build-time hook | Status |
 |---|---|---|
-| npm | `postinstall` scripts | `npm install` + `require()` pass |
-| Cargo | `build.rs` | `cargo build` + link a test binary |
-| NuGet | MSBuild targets | `dotnet restore` + a load pass |
-| Go | none by default | `go build` + `init()` at first use |
+| npm | `postinstall` scripts | **supported** — `npm install` + `require()` pass |
+| Cargo | `build.rs` | not shipped — `cargo build` + a linked test binary |
+| NuGet | MSBuild targets | not shipped — `dotnet restore` + a load pass |
+| Go | none by default | not shipped — `go build` + `init()` at first use |
 
 Dependencies are now *visible* but not *judged*: the tree is fetched as wheels and hashed,
 so you can see what a package would pull in and diff it between releases. Those wheels are

@@ -279,8 +279,8 @@ def main():
     text(s, 838200, 1950000, 10200000, 2800000,
          "Live demo     45.77.143.94\n"
          "Repository    github.com/derKosi/agent-rush  (MIT)\n"
-         "Tests         78 green, most of them without Docker\n"
-         "Fixtures      five: honest, injected, broken, hostile-at-import, deps\n"
+         "Tests         82 green, most of them without Docker\n"
+         "Fixtures      six: honest, injected, broken, lazy-import, deps, npm\n"
          "Verified runs  containment, injection, batch — each with exact observations",
          size=17, color=TEXT, font="Menlo", space=12)
     text(s, 838200, 5200000, 10200000, 600000,

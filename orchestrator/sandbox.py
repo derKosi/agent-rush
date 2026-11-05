@@ -37,7 +37,7 @@ def _sha256(path: Path) -> str:
 
 
 def run_package(package_path, run_dir, *, task_id, timeout_s=180,
-                egress_mode="none", allow="", probes="") -> dict:
+                egress_mode="none", allow="", probes="", runtime="python") -> dict:
     """Execute one package in the sandbox. Returns a plain dict, JSON-serialisable."""
     package_path = Path(package_path).resolve()
     if not package_path.is_file():
@@ -58,6 +58,7 @@ def run_package(package_path, run_dir, *, task_id, timeout_s=180,
         "AR_PROXY_LOG": str(run_dir / "egress.jsonl"),
         "AR_TIMEOUT_S": str(timeout_s),
         "AR_PROBES": probes or "",
+        "AR_RUNTIME": runtime,
     })
 
     override = os.environ.get("AR_SANDBOX_CMD")
@@ -167,7 +168,7 @@ def run_script(package_path, run_dir, code, *, task_id, timeout_s=60) -> dict:
             "stderr_tail": (err or "")[-500:]}
 
 
-def run_import(package_path, run_dir, *, task_id, timeout_s=120, probes="") -> dict:
+def run_import(package_path, run_dir, *, task_id, timeout_s=120, probes="", runtime="python") -> dict:
     """Second pass: install, then import. Same sandbox, same limits, different question."""
     package_path = Path(package_path).resolve()
     run_dir = Path(run_dir).resolve()
@@ -185,6 +186,7 @@ def run_import(package_path, run_dir, *, task_id, timeout_s=120, probes="") -> d
         "AR_ALLOW": "",
         "AR_TIMEOUT_S": str(timeout_s),
         "AR_PROBES": probes or "",
+        "AR_RUNTIME": runtime,
         "AR_PROXY_LOG": str(run_dir / "egress-import.jsonl"),
     })
 
