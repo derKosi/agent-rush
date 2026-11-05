@@ -4,9 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Agent Rush</title>
-<link rel="stylesheet" href="app.css?v=32">
+<link rel="stylesheet" href="app.css?v=35">
 <script>
-  try { var t = localStorage.getItem('ar-theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+  // Theme before first paint: URL wins, then storage. Setting it later means the page
+  // flashes the other theme and, in a screenshot, can be caught half-applied.
+  try {
+    var q = new URLSearchParams(location.search).get('theme');
+    var s = q || localStorage.getItem('ar-theme');
+    if (s) document.documentElement.dataset.theme = s;
+  } catch (e) {}
 </script>
 </head>
 <body>
@@ -94,6 +100,6 @@
   </form>
 </dialog>
 
-<script src="app.js?v=30"></script>
+<script src="app.js?v=33"></script>
 </body>
 </html>

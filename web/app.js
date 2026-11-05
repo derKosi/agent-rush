@@ -342,7 +342,9 @@ function setTheme(next) {
 $('theme-toggle').addEventListener('click', () => {
   setTheme(document.documentElement.dataset.theme === 'light' ? 'dark' : 'light');
 });
-setTheme(document.documentElement.dataset.theme || 'dark');
+// ?theme=light makes a view reproducible in a screenshot or a recording.
+const wantTheme = new URLSearchParams(location.search).get('theme');
+setTheme(wantTheme || document.documentElement.dataset.theme || 'dark');
 
 getJSON('health').then((h) => {
   if (typeof h.dep_threshold === 'number') DEP_THRESHOLD = h.dep_threshold;
@@ -350,6 +352,11 @@ getJSON('health').then((h) => {
     ? `${h.model} · reasoning ${h.reasoning}`
     : 'rules only';
 }).catch(() => { $('model-chip').textContent = 'offline'; });
+
+// ?new=1 opens the run dialog, for screenshots of the flow.
+if (new URLSearchParams(location.search).get('new')) {
+  setTimeout(() => { $('form-note').textContent = ''; dialog.showModal(); }, 300);
+}
 
 loadRuns().then(() => {
   const wanted = new URLSearchParams(location.search).get('run');
