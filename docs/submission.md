@@ -73,8 +73,8 @@ one verified containment moment recorded in the README with the exact observatio
 |---|---|
 | Demo | http://45.77.143.94/ |
 | Repository | https://github.com/derKosi/agent-rush |
-| Slides | `docs/slides/agent-rush.pdf` |
-| Cover | `docs/slides/cover.png` |
+| Slides | `docs/slides/agent-rush.pptx` (9 slides) |
+| Cover | `docs/slides/cover.png` (1920×1080) |
 
 ## Submission checklist (from the event page)
 
@@ -82,9 +82,9 @@ one verified containment moment recorded in the README with the exact observatio
 - [x] Short description
 - [x] Long description
 - [x] Technology & category tags
-- [ ] Cover image — *to add*
+- [x] Cover image — `docs/slides/cover.png`
 - [ ] Video presentation — *recorded by Kosi, script in `docs/demo-storyboard.md`*
-- [ ] Slide presentation — *in progress*
+- [x] Slide presentation — `docs/slides/agent-rush.pptx`
 - [x] Public GitHub repository (MIT)
 - [x] Demo application platform + application URL
 - [x] README explains the Vultr architecture and the agent's use case
