@@ -1,5 +1,7 @@
 # Agent Rush — Package Triage Sandbox
 
+**Live demo:** <http://45.77.143.94/> · **API docs:** <http://45.77.143.94/api/docs>
+
 Submission for **Vultr: Agent Rush Hackathon**, Track 1 *Blast Radius Zero* (Nov 3–8, 2026).
 
 An agent inspects an **untrusted Python source package**, decides how to probe it, runs the
@@ -72,6 +74,17 @@ Found while wiring the model: `glm-5.2` is a **reasoning** model, and reasoning 
 against `max_tokens`. With a short budget it returned an empty string and `finish_reason: length`,
 which the client used to hand back as a successful answer. It now retries once with four times the
 budget and raises if the model still spends everything thinking.
+
+**2026-11-05 · Vultr Cloud Compute, `vc2-1c-2gb`, Frankfurt · public URL**
+
+| Signal | Observed |
+|---|---|
+| request | `POST http://45.77.143.94/tasks` from outside the VM |
+| result | state `done` after 16 s, verdict `high`, `model_used: true` |
+| findings | 11, from both the rules and the model, 0 rejected |
+| artifacts | `egress.jsonl`, `exec.json`, `pip.log`, `probe.json`, downloadable |
+| containment | 2 proxy denials, 3 blocked probes, 1 spawn that succeeded and is reported as such |
+| leftovers | no container, no network |
 
 Two honest limitations from that run:
 

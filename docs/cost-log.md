@@ -5,7 +5,8 @@ rekonstruiert. Beträge sind Schätzungen aus der Vultr-Abrechnung, keine Messun
 
 | Tag | Ressource | Zweck | Laufzeit | Geschätzt |
 |---|---|---|---|---|
-| — | — | Kickoff, noch keine Instanz | — | $0.00 |
+| 05.11. | Cloud Compute `vc2-1c-2gb` (fra), 1× | Demo-Instanz, laeuft | dauerhaft | $0.014/h |
+| 05.11. | 2× verworfen (Provisioning-Fehler: falsches SSH-Key-Feld) | je ~10 min | ~0.3 h | ~$0.01 |
 
 ## Regeln
 

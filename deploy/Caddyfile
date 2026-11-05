@@ -29,5 +29,6 @@
 		}
 	}
 
-	respond /health 200
+	# No static /health here: the app serves it, and a static override would hide
+	# whether the backend is actually up.
 }

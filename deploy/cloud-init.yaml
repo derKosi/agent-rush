@@ -51,5 +51,10 @@ runcmd:
   - [ bash, -c, "install -d -o arrush -g arrush -m 0755 /opt/agent-rush /opt/agent-rush/work" ]
   - [ systemctl, enable, --now, caddy ]
   - [ bash, -c, "echo 'bootstrap ok' | tee /var/log/agent-rush-bootstrap.log" ]
+  # Deterministic key injection: the Vultr instance API ignores an unknown ssh key
+  # field silently, which cost one rebuild. This works regardless of the field name.
+  - [ bash, -c, "install -d -m 0700 -o root -g root /root/.ssh" ]
+  - [ bash, -c, "grep -qxF 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBU/l9ssInmeJRJB+f3OKSKaSSdCYBptHJ1HnqZeiF1l kosi@MacBook-Pro.fritz.box' /root/.ssh/authorized_keys 2>/dev/null || echo 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBU/l9ssInmeJRJB+f3OKSKaSSdCYBptHJ1HnqZeiF1l kosi@MacBook-Pro.fritz.box' >> /root/.ssh/authorized_keys" ]
+  - [ bash, -c, "chmod 0600 /root/.ssh/authorized_keys" ]
 
 final_message: "agent-rush bootstrap done after $UPTIME seconds"

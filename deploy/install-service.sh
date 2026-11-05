@@ -17,6 +17,11 @@ echo "== user and dirs"
 id -u arrush >/dev/null 2>&1 || useradd -m -s /bin/bash arrush
 usermod -aG docker arrush
 install -d -o arrush -g arrush -m 0755 "$REPO_DIR" "$REPO_DIR/work"
+# rsync from a laptop leaves files owned by whoever ran it. Without this the
+# service starts, cannot read api/main.py, and systemd loops on exit-code 1.
+chown -R arrush:arrush "$REPO_DIR"
+chmod -R u+rwX,go+rX "$REPO_DIR"
+[ -f "$REPO_DIR/.env" ] && chmod 600 "$REPO_DIR/.env"
 
 echo "== systemd unit"
 install -m 0644 "$REPO_DIR/deploy/agent-rush.service" /etc/systemd/system/agent-rush.service
