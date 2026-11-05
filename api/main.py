@@ -100,6 +100,7 @@ def health():
         "model_configured": bool(os.environ.get("AR_VULTR_KEY") and os.environ.get("AR_MODEL")),
         "model": os.environ.get("AR_MODEL") or None,
         "reasoning": "on" if os.environ.get("AR_REASONING", "").lower() == "on" else "off",
+        "dep_threshold": float(os.environ.get("AR_DEP_RISK_THRESHOLD", "7")),
         "runs_dir": str(RUNS_DIR),
         "sandbox_override": bool(os.environ.get("AR_SANDBOX_CMD")),
         "limits": GUARD.snapshot(),

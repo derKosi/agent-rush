@@ -41,8 +41,10 @@ last runs — real records from the store. The account chip is demo data and say
 ![One blocked run: verdict first](docs/screenshots/demo-blocked.png)
 
 *Opening a run puts the verdict at the top: risk, the model that produced it, duration, and
-the three findings worth reading. Same run, three versions of one package — `2.8.0` and
-`2.9.0` build clean, `2.9.1` pins `urllib3 1.24.1` and is blocked.*
+the three findings worth reading. Below it the dependency panel: a gauge from green to red
+with the block threshold marked, and one row per artifact with its hash, advisory count and
+state. Same run, three versions of one package — `2.8.0` and `2.9.0` build clean, `2.9.1`
+pins `urllib3 1.24.1` and is blocked.*
 
 ![The same run further down: findings with their source, including the injection finding](docs/screenshots/ui-injection.png)
 

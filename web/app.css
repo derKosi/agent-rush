@@ -276,12 +276,18 @@ textarea { resize: vertical; }
 .status.bad { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 45%, transparent); }
 
 /* Run view: when a specific run is opened, the verdict matters more than the form. */
-body.run-view #verdict { order: 1; }
+/* Reading a run: the hero already carries risk and summary, so the standalone verdict
+   panel is redundant there, and history is context for the dashboard, not for a result. */
+body.run-view #verdict { display: none; }
+body.run-view #deps-panel { order: 1; }
 body.run-view #plan    { order: 2; }
 body.run-view #findings-panel { order: 3; }
 body.run-view #evidence { order: 4; }
 body.run-view #trace-panel { order: 5; }
 body.run-view #task    { order: 6; opacity: .9; }
+/* The history list lives outside the grid, so ordering cannot move it. While a run is
+   open it is context nobody asked for -- hide it and leave the result at the top. */
+body.run-view #history { display: none; }
 
 .modelchip {
   font: 11px ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -328,3 +334,44 @@ body.run-view #task    { order: 6; opacity: .9; }
 .run-row { grid-template-columns: 160px minmax(0, 1fr) 96px 72px 64px; }
 .run-row .model { font-size: 11px; color: var(--muted); }
 @media (max-width: 900px) { .run-row .model { display: none; } }
+
+/* Dependency risk, visually: the score is the thing that decides the block, so it gets
+   a gauge and a colour, not a sentence in a findings list. */
+.gauge-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 14px; }
+.gauge { position: relative; width: 340px; height: 10px; border-radius: 999px; overflow: hidden; background: var(--surface-2); }
+.gauge-track { position: absolute; inset: 0; }
+.gauge-zone { position: absolute; top: 0; bottom: 0; }
+.gauge-zone.green { left: 0; width: 40%; background: color-mix(in srgb, var(--accent) 55%, transparent); }
+.gauge-zone.amber { left: 40%; width: 30%; background: color-mix(in srgb, var(--warn) 55%, transparent); }
+.gauge-zone.red { left: 70%; width: 30%; background: color-mix(in srgb, var(--danger) 60%, transparent); }
+.gauge-mark {
+  position: absolute; top: -3px; bottom: -3px; width: 3px; border-radius: 2px;
+  background: var(--text); box-shadow: 0 0 0 2px var(--surface);
+  transform: translateX(-50%);
+}
+.gauge-threshold {
+  position: absolute; top: -5px; bottom: -5px; left: 70%; width: 1px;
+  border-left: 1px dashed var(--text-dim); opacity: .8;
+}
+.gauge-caption { font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--muted); }
+.gauge-caption strong { color: var(--text); }
+
+table.deps { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+table.deps th {
+  text-align: left; font-size: 10.5px; text-transform: uppercase; letter-spacing: .07em;
+  color: var(--muted); font-weight: 600; padding: 0 10px 6px 0; border-bottom: 1px solid var(--border);
+}
+table.deps td { padding: 8px 10px 8px 0; border-bottom: 1px solid var(--border-soft); vertical-align: middle; }
+table.deps td.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11.5px; color: var(--muted); }
+table.deps td.pkgname { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.pill {
+  display: inline-block; font: 11px ui-monospace, SFMono-Regular, Menlo, monospace;
+  border-radius: 999px; padding: 1px 8px; border: 1px solid var(--border); color: var(--muted);
+}
+.pill.bad { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 45%, transparent); }
+.pill.warn { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 45%, transparent); }
+.pill.good { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 45%, transparent); }
+.dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 6px; vertical-align: 1px; }
+.dot.good { background: var(--accent); }
+.dot.warn { background: var(--warn); }
+.dot.bad { background: var(--danger); }

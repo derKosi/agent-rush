@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Agent Rush — Package Triage</title>
-<link rel="stylesheet" href="app.css?v=9">
+<link rel="stylesheet" href="app.css?v=12">
 <script>
   // Set the theme before first paint, otherwise the page flashes white.
   try {
@@ -114,6 +114,26 @@
       <p class="note" id="egress"></p>
     </section>
 
+    <section class="panel wide" id="deps-panel" hidden>
+      <h2>Dependencies <span class="tag" id="deps-count"></span></h2>
+      <div class="gauge-row">
+        <div class="gauge" id="deps-gauge">
+          <div class="gauge-track"></div>
+          <div class="gauge-zone green"></div>
+          <div class="gauge-zone amber"></div>
+          <div class="gauge-zone red"></div>
+          <div class="gauge-mark" id="deps-mark"></div>
+          <div class="gauge-threshold" title="block threshold"></div>
+        </div>
+        <div class="gauge-caption" id="deps-caption">—</div>
+      </div>
+      <table class="deps" id="deps-table">
+        <thead><tr><th>Package</th><th>Version</th><th>sha256</th><th>Advisories</th><th>State</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <p class="note" id="deps-note"></p>
+    </section>
+
     <section class="panel wide" id="findings-panel">
       <h2>Findings <span class="tag" id="finding-count"></span></h2>
       <ul class="findings" id="findings"><li class="empty">nothing yet</li></ul>
@@ -131,6 +151,6 @@
   <span id="runid"></span>
 </footer>
 
-<script src="app.js?v=9"></script>
+<script src="app.js?v=12"></script>
 </body>
 </html>

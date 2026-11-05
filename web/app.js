@@ -91,6 +91,97 @@ function renderHero(run) {
   }
 }
 
+let DEP_THRESHOLD = 7;
+
+function parseArtifact(file) {
+  const match = /^(.+?)-(\d[^-]*)/.exec(file || '');
+  return match ? { name: match[1], version: match[2] } : { name: file || '—', version: '' };
+}
+
+function renderDependencies(run) {
+  const panel = $('deps-panel');
+  if (!panel) return;
+  const dep = (run.evidence || {}).dependencies || {};
+  const resolved = dep.resolved || [];
+  const declared = dep.declared || [];
+  if (!resolved.length && !declared.length) { panel.hidden = true; return; }
+
+  panel.hidden = false;
+  const vulns = dep.vulnerabilities || [];
+  const outdated = dep.outdated || [];
+  const scores = vulns.map((v) => v.max_score).filter((n) => typeof n === 'number');
+  const worst = scores.length ? Math.max(...scores) : 0;
+
+  $('deps-count').textContent = resolved.length ? `${resolved.length} resolved` : 'none resolved';
+
+  const mark = $('deps-mark');
+  mark.style.left = `${Math.min(100, worst * 10)}%`;
+  const level = worst >= DEP_THRESHOLD ? 'bad' : worst >= 4 ? 'warn' : 'good';
+  $('deps-caption').innerHTML =
+    `<span class="dot ${level}"></span>worst advisory <strong>${worst ? worst.toFixed(1) : '—'}</strong> / 10` +
+    ` &nbsp;·&nbsp; block from ${DEP_THRESHOLD}`;
+
+  const body = $('deps-table').querySelector('tbody');
+  body.innerHTML = '';
+  for (const item of resolved) {
+    const { name, version } = parseArtifact(item.file);
+    const vuln = vulns.find((v) => v.package === name) || null;
+    const behind = outdated.find((o) => o.package === name) || null;
+
+    const tr = document.createElement('tr');
+
+    const tdName = document.createElement('td');
+    tdName.className = 'pkgname';
+    tdName.textContent = name;
+
+    const tdVersion = document.createElement('td');
+    tdVersion.className = 'mono';
+    tdVersion.textContent = version + (behind ? ` → ${behind.latest}` : '');
+
+    const tdHash = document.createElement('td');
+    tdHash.className = 'mono';
+    tdHash.textContent = (item.sha256 || '').slice(0, 12) + '…';
+    tdHash.title = item.sha256 || '';
+
+    const tdAdv = document.createElement('td');
+    if (vuln && vuln.count) {
+      const pill = document.createElement('span');
+      pill.className = 'pill ' + (vuln.max_score >= DEP_THRESHOLD ? 'bad' : 'warn');
+      pill.textContent = `${vuln.count} · ${vuln.max_score ?? '?'}`;
+      pill.title = (vuln.vulns || []).map((v) => `${v.id} ${v.severity}`).join('\n');
+      tdAdv.appendChild(pill);
+    } else {
+      const pill = document.createElement('span');
+      pill.className = 'pill good';
+      pill.textContent = 'none';
+      tdAdv.appendChild(pill);
+    }
+
+    const tdState = document.createElement('td');
+    const state = document.createElement('span');
+    if (vuln && vuln.count && vuln.max_score >= DEP_THRESHOLD) {
+      state.className = 'pill bad'; state.textContent = 'blocked';
+    } else if (behind) {
+      state.className = 'pill warn'; state.textContent = 'behind';
+    } else {
+      state.className = 'pill good'; state.textContent = 'ok';
+    }
+    tdState.appendChild(state);
+
+    tr.append(tdName, tdVersion, tdHash, tdAdv, tdState);
+    body.appendChild(tr);
+  }
+
+  const note = $('deps-note');
+  if (!resolved.length) {
+    note.textContent = `Declared: ${declared.join(', ')} — nothing could be fetched, so nothing is known about it.`;
+  } else if (!vulns.length) {
+    note.textContent = 'Hashes are recorded for every artifact; no known advisories for this tree.';
+  } else {
+    note.textContent = 'Wheels are fetched and hashed, never installed. Advisories come from OSV; the score is the advisory label, or a coarse reading of its impact metrics.';
+  }
+}
+
 function renderVerdict(v) {
   const risk = $('risk');
   risk.innerHTML = '';
@@ -208,6 +299,7 @@ async function poll(id) {
     renderVerdict(run.verdict);
     renderFindings(run.verdict);
     renderHero(run);
+    renderDependencies(run);
   }
   renderEvidence(run);
   setStatus(run.state, run.state === 'done' ? 'ok' : run.state === 'failed' ? 'bad' : 'busy');
@@ -279,6 +371,7 @@ if (linked) {
 fetch('health').then((r) => r.json()).then((h) => {
   const chip = $('model-chip');
   if (!chip) return;
+  if (typeof h.dep_threshold === 'number') DEP_THRESHOLD = h.dep_threshold;
   if (h.model_configured) {
     chip.textContent = `${h.model || 'model'} · reasoning ${h.reasoning || 'off'}`;
     chip.classList.remove('off');
