@@ -16,6 +16,26 @@ T0=$(date +%s)
 # --no-deps:            the dependency graph is not what we are testing
 # --no-build-isolation: the hook must run in this environment, not a network-fetched one
 # --no-build-isolation also means the package's setup.py imports happen here, on purpose.
+# Mode "script": run a short Python inspection script written by the model. Same
+# sandbox, same limits -- model-authored code is still untrusted code.
+if [ "${AR_MODE:-pip}" = "script" ]; then
+  set +e
+  python3 /work/script.py /work/pkg.tar.gz > /work/out/script.log 2>&1
+  SCRIPT_EXIT=$?
+  set -e
+  cat /work/out/script.log
+  cat > /work/out/exec.json <<EOF
+{
+  "started": "$STARTED",
+  "finished": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+  "duration_s": $(( $(date +%s) - T0 )),
+  "mode": "script",
+  "script_exit": $SCRIPT_EXIT
+}
+EOF
+  exit 0
+fi
+
 # Redirect to a file rather than piping through tee: a detached child that inherits
 # the pipe would otherwise keep the reader open and hang the run until the timeout.
 set +e

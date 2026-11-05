@@ -8,6 +8,7 @@ plan falls back to running everything, which is the safe default.
 
 from __future__ import annotations
 
+import ast
 import json
 import os
 
@@ -128,3 +129,86 @@ def plan(package_path, question=None, chat=None, model=None):
 
 def probes_env(plan_result):
     return ",".join(plan_result.get("probes") or ALL_PROBES)
+
+
+SCRIPT_PROMPT = """Write a short Python 3 script that inspects an untrusted package archive.
+
+Constraints, all mandatory:
+- stdlib only, no third-party imports
+- read the archive at sys.argv[1] with tarfile; never import or execute the package
+- no network, no subprocess, no eval/exec
+- print ONE JSON object to stdout: {"summary": "...", "findings": [{"claim": "...", "severity": "info|low|medium|high"}]}
+- at most 40 lines, no prose outside the code block
+
+Answer with the code only, in a single ```python block."""
+
+# Static audit of the script the model wrote. Two earlier attempts matched text and
+# both failed the same way: a regex like os\.system fires inside the string
+# "subprocess|os\.system|popen". So this walks the AST instead -- real imports and real
+# calls only. It is not the defence (the sandbox is); it just refuses code that wants
+# capabilities the task does not need.
+BANNED_MODULES = {"subprocess", "socket", "urllib", "requests", "ctypes", "http", "ftplib"}
+BANNED_OS_ATTRS = {"system", "popen", "execv", "execve", "spawnv", "spawnl"}
+
+
+def audit_script(code):
+    """Return None if the script is acceptable, else a reason string."""
+    try:
+        tree = ast.parse(code)
+    except SyntaxError as exc:
+        return f"syntax error: {exc.msg}"
+
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                if alias.name.split(".")[0] in BANNED_MODULES:
+                    return f"imports {alias.name}"
+        elif isinstance(node, ast.ImportFrom):
+            if (node.module or "").split(".")[0] in BANNED_MODULES:
+                return f"imports from {node.module}"
+        elif isinstance(node, ast.Call):
+            func = node.func
+            if isinstance(func, ast.Attribute) and isinstance(func.value, ast.Name):
+                if func.value.id == "os" and func.attr in BANNED_OS_ATTRS:
+                    return f"calls os.{func.attr}"
+                if func.value.id in BANNED_MODULES:
+                    return f"calls {func.value.id}.{func.attr}"
+            elif isinstance(func, ast.Name) and func.id in {"eval", "exec", "__import__"}:
+                return f"calls {func.id}"
+    return None
+
+
+def write_script(package_path, question=None, chat=None, model=None):
+    """Ask the model for an inspection script. Returns dict with code or a reason."""
+    if chat is None:
+        return {"code": None, "reason": "no model configured"}
+    profile = static_profile(package_path)
+    messages = [
+        {"role": "system", "content": SCRIPT_PROMPT},
+        {"role": "user", "content": json.dumps(
+            {"question": question or "Is this package safe to install?",
+             "package": profile}, ensure_ascii=False, indent=2)},
+    ]
+    try:
+        raw = chat(messages, model=model) if model else chat(messages)
+    except Exception as exc:  # noqa: BLE001
+        return {"code": None, "reason": f"model call failed: {type(exc).__name__}"}
+
+    code = raw
+    if "```" in raw:
+        parts = raw.split("```")
+        if len(parts) >= 2:
+            code = parts[1]
+            if code.lstrip().startswith("python"):
+                code = code.lstrip()[6:]
+    code = code.strip()
+    if not code:
+        return {"code": None, "reason": "model returned no code"}
+
+    problem = audit_script(code)
+    if problem:
+        return {"code": None, "reason": f"refused: {problem}", "rejected_code": code}
+    if len(code.splitlines()) > 60:
+        return {"code": None, "reason": "refused: script longer than 60 lines",
+                "rejected_code": code}
+    return {"code": code, "reason": "ok"}

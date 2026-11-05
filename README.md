@@ -22,7 +22,7 @@ shows the *attempt* and the *denial* side by side.
 | Repo scaffold, LICENSE, docs, cost log | done before kickoff |
 | Sandbox image + runner + egress proxy | **first real run verified 04.11.** locally (Docker 29.5, colima, linux/amd64) — see below |
 | Inference client (Vultr Serverless Inference) | scaffolded, key not yet provisioned |
-| Planner (the model picks which probes run) | built 05.11., 8/8 tests |
+| Planner (picks probes, writes an inspection script) | built 05.11., 15/15 tests |
 | Orchestrator: sandbox dispatch + evidence collection | built 03.11., 7/7 tests green against a stub runner |
 | Orchestrator: verdict (rules + grounded model path) | built 04.11., 12/12 tests green |
 | API (POST /tasks, GET /runs, artifacts) | built 04.11., 8/8 tests green, end-to-end run green |
@@ -101,6 +101,23 @@ The second fixture, `sample_pkg_injected`, prints a notice aimed at the model:
 
 That is the property worth demoing: an agent that reads hostile text and reports it,
 instead of obeying it.
+
+**2026-11-05 · the model writes the inspection code**
+
+Two passes per task now. First the planner writes a short Python script that opens the archive
+and reports what it finds; it runs in the same sandbox as everything else, and the script is
+downloadable as `script.py` so the code can be read, not just trusted.
+
+| Signal | Observed |
+|---|---|
+| script written | yes, AST-audited before it runs (no subprocess, sockets, eval) |
+| inspection | exit 0, `{"summary": "Scanned archive; highest severity: high", "findings": 3}` |
+| evidence | `inspection` appears as a citation source in the verdict |
+| artifacts | `script.py`, `script.log`, `probe.json`, `egress.jsonl`, … all downloadable |
+
+A static audit of the script was needed because the first two versions matched text: a regex
+for `os\.system` fired inside the string `"subprocess|os\.system|popen"`. It now walks the AST
+and only looks at real imports and real calls.
 
 Two honest limitations from that run:
 

@@ -63,6 +63,7 @@ RUN_CMD=(docker run --rm
   --user 10001:10001
   # The planner's choice has to reach the process under test, or the plan is decoration.
   -e "AR_PROBES=${AR_PROBES:-}"
+  -e "AR_MODE=${AR_MODE:-pip}"
   --cap-drop ALL
   --security-opt no-new-privileges
   --pids-limit "$PIDS"

@@ -6,6 +6,7 @@ Kept separate from the API so the whole thing can be exercised from a script
 
 from __future__ import annotations
 
+import json
 import time
 from pathlib import Path
 
@@ -46,6 +47,23 @@ def _source_excerpt(package_path, limit=1500):
     return ""
 
 
+def _parse_inspection(inspection):
+    """The script's JSON, if it produced any. Absence is recorded, not hidden."""
+    if not inspection:
+        return None
+    out = inspection.get("output") or ""
+    start, end = out.find("{"), out.rfind("}")
+    parsed = None
+    if start != -1 and end > start:
+        try:
+            parsed = json.loads(out[start:end + 1])
+        except json.JSONDecodeError:
+            parsed = None
+    return {"exit_code": inspection.get("exit_code"),
+            "parsed": parsed,
+            "raw_tail": out[-1200:] if parsed is None else ""}
+
+
 def collect_evidence(run_dir, result, package_path=None) -> dict:
     """Assemble the evidence object. Every field is read from disk or the result."""
     run_dir = Path(run_dir)
@@ -65,6 +83,15 @@ def collect_evidence(run_dir, result, package_path=None) -> dict:
 
     excerpt = _source_excerpt(package_path) if package_path else ""
 
+    collected = result.get("artifacts") or {}
+    # Anything else in the artifacts dir (script.log, script.py from the inspection
+    # pass) belongs in the evidence too. Listing the directory beats guessing names.
+    for path in sorted(art.iterdir()) if art.is_dir() else []:
+        if path.is_file() and path.name not in collected:
+            import hashlib
+            digest = hashlib.sha256(path.read_bytes()).hexdigest()
+            collected[path.name] = {"bytes": path.stat().st_size, "sha256": digest}
+
     return {
         "build_log_tail": log_tail,
         "package_source_excerpt": excerpt,
@@ -72,7 +99,7 @@ def collect_evidence(run_dir, result, package_path=None) -> dict:
         "egress": egress_summary(egress_path),
         "probe": _read_json(art / "probe.json"),
         "fsdiff": _read_json(art / "fsdiff.json"),
-        "artifacts": result.get("artifacts") or {},
+        "artifacts": collected,
         "sandbox": {
             "exit_code": result.get("exit_code"),
             "timed_out": result.get("timed_out"),
@@ -92,7 +119,24 @@ def execute(store, run_id, package_path, question=None, *, egress_mode="none",
     except Exception as exc:  # noqa: BLE001
         plan_result = {"probes": list(planner.ALL_PROBES), "source": "default",
                        "reason": f"planner failed: {type(exc).__name__}: {exc}", "rejected": []}
+    # The model also writes an inspection script, which runs in the same sandbox
+    # before anything executes. Pattern A in the challenge playbook, taken literally.
+    script_result = {"code": None, "reason": "not attempted"}
+    inspection = None
+    if chat is not None:
+        script_result = planner.write_script(package_path, question=question, chat=chat, model=model)
+    plan_result["script"] = {"written": bool(script_result.get("code")),
+                             "reason": script_result.get("reason")}
     store.update(run_id, plan=plan_result)
+
+    if script_result.get("code"):
+        try:
+            inspection = sandbox.run_script(
+                Path(package_path), store.dir_for(run_id), script_result["code"],
+                task_id=run_id, timeout_s=60)
+            store.update(run_id, inspection=inspection)
+        except Exception as exc:  # noqa: BLE001
+            inspection = {"exit_code": None, "output": "", "error": str(exc)}
 
     try:
         result = sandbox.run_package(
@@ -108,6 +152,7 @@ def execute(store, run_id, package_path, question=None, *, egress_mode="none",
                             error=f"{type(exc).__name__}: {exc}")
 
     evidence = collect_evidence(store.dir_for(run_id), result, Path(package_path))
+    evidence["inspection"] = _parse_inspection(inspection)
 
     try:
         v = verdict(evidence, question=question, chat=chat, model=model)

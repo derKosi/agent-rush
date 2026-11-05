@@ -21,7 +21,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 RUNNER = REPO_ROOT / "sandbox" / "run.sh"
-ARTIFACT_NAMES = ("exec.json", "pip.log", "probe.json", "fsdiff.json", "egress.jsonl")
+ARTIFACT_NAMES = ("exec.json", "pip.log", "probe.json", "script.log", "fsdiff.json", "egress.jsonl")
 
 
 class SandboxError(RuntimeError):
@@ -116,3 +116,52 @@ def _read_exec_json(path: Path):
         return json.loads(path.read_text(encoding="utf-8"))
     except json.JSONDecodeError:
         return {"error": "exec.json is not valid JSON"}
+
+
+def run_script(package_path, run_dir, code, *, task_id, timeout_s=60) -> dict:
+    """Run a model-authored inspection script in the same sandbox.
+
+    The script gets the package path as argv[1] and is expected to print JSON.
+    It runs with no network and a read-only root, exactly like the probe run --
+    model output is untrusted code and is treated as such.
+    """
+    package_path = Path(package_path).resolve()
+    run_dir = Path(run_dir).resolve()
+    # Own work dir: sharing one with the probe run means the second run overwrites
+    # the first one's exec.json and the inspection log disappears.
+    work = run_dir / "work-script"
+    artifacts_dir = run_dir / "artifacts"
+    work.mkdir(parents=True, exist_ok=True)
+    artifacts_dir.mkdir(parents=True, exist_ok=True)
+    (work / "script.py").write_text(code, encoding="utf-8")
+
+    env = os.environ.copy()
+    env.update({
+        "AR_WORKDIR": str(work),
+        "AR_TASK_ID": task_id,
+        "AR_MODE": "script",
+        "AR_EGRESS_MODE": "none",
+        "AR_ALLOW": "",
+        "AR_TIMEOUT_S": str(timeout_s),
+        "AR_PROBES": "",
+    })
+
+    started = time.time()
+    try:
+        proc = subprocess.run(["bash", str(RUNNER), str(package_path), task_id],
+                              env=env, capture_output=True, text=True, timeout=timeout_s + 30)
+        rc, err = proc.returncode, proc.stderr
+    except subprocess.TimeoutExpired:
+        rc, err = -1, "timeout"
+    duration = round(time.time() - started, 2)
+
+    log_path = work / "out" / "script.log"
+    output = log_path.read_text(encoding="utf-8", errors="replace")[-4000:] if log_path.is_file() else ""
+    if log_path.is_file():
+        shutil.copy2(log_path, artifacts_dir / "script.log")
+    # The script itself is evidence: a juror should be able to read the code the
+    # model wrote, not just trust that it wrote something.
+    shutil.copy2(work / "script.py", artifacts_dir / "script.py")
+
+    return {"exit_code": rc, "duration_s": duration, "output": output,
+            "stderr_tail": (err or "")[-500:]}

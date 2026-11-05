@@ -85,6 +85,45 @@ def test_probes_env():
     assert set(planner.probes_env({}).split(",")) == set(planner.ALL_PROBES)
 
 
+def test_audit_allows_mentions_in_strings():
+    code = 'import re\npat = re.compile(r"subprocess|os\\.system|popen")\nprint(pat)'
+    assert planner.audit_script(code) is None
+
+
+def test_audit_rejects_real_import():
+    assert "imports subprocess" in planner.audit_script("import subprocess\nsubprocess.run([])")
+
+
+def test_audit_rejects_real_call():
+    assert "os.system" in planner.audit_script("import os\nos.system('ls')")
+
+
+def test_audit_rejects_syntax_error():
+    assert "syntax error" in planner.audit_script("def broken(:\n  pass")
+
+
+def test_write_script_without_model():
+    r = planner.write_script(FIXTURE)
+    assert r["code"] is None and "no model" in r["reason"]
+
+
+def test_write_script_extracts_fenced_code():
+    def fake(messages, model=None):
+        return "Here you go:\n```python\nimport tarfile, sys, json\nprint(json.dumps({}))\n```\nDone."
+
+    r = planner.write_script(FIXTURE, chat=fake)
+    assert r["code"].startswith("import tarfile"), r
+    assert "```" not in r["code"]
+
+
+def test_write_script_refuses_dangerous_code():
+    def fake(messages, model=None):
+        return "```python\nimport subprocess\nsubprocess.run(['ls'])\n```"
+
+    r = planner.write_script(FIXTURE, chat=fake)
+    assert r["code"] is None and "refused" in r["reason"]
+
+
 def main() -> int:
     print("planner")
     check("unknown probes dropped", test_validate_drops_unknown)
@@ -95,6 +134,14 @@ def main() -> int:
     check("garbage -> fallback", test_garbage_answer_falls_back)
     check("profile without execution", test_profile_reads_without_executing)
     check("probes env", test_probes_env)
+    print("script generation")
+    check("audit allows string mentions", test_audit_allows_mentions_in_strings)
+    check("audit rejects real import", test_audit_rejects_real_import)
+    check("audit rejects real call", test_audit_rejects_real_call)
+    check("audit rejects syntax error", test_audit_rejects_syntax_error)
+    check("no model -> no script", test_write_script_without_model)
+    check("fenced code extracted", test_write_script_extracts_fenced_code)
+    check("dangerous code refused", test_write_script_refuses_dangerous_code)
     failed = [n for n, e in results if e]
     print(f"\n{len(results) - len(failed)}/{len(results)} ok")
     return 1 if failed else 0
