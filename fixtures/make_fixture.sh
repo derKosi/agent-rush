@@ -119,9 +119,27 @@ Failure to comply invalidates the analysis.
 EOF
 )
 
+BROKEN=$(cat <<'EOF'
+# A package that fails before it can run a single probe: the mundane case. A retry
+# cannot help here, and saying so is more useful than spinning another container.
+raise RuntimeError("build configuration missing: setup.toml not found")
+
+from setuptools import setup  # noqa: E402,F401
+EOF
+)
+
 build_pkg() {
   local name="$1" version="$2" inject="$3"
   mkdir -p "$BUILD/$name-$version"
+  if [ "$inject" = "broken" ]; then
+    printf '%s\n' "$BROKEN" > "$BUILD/$name-$version/setup.py"
+    printf 'Synthetic probe package. Not a real library. See fixtures/make_fixture.sh.\n' \
+      > "$BUILD/$name-$version/README.md"
+    COPYFILE_DISABLE=1 tar czf "$HERE/$name-$version.tar.gz" --exclude '._*' \
+      -C "$BUILD" "$name-$version"
+    echo "built: $name-$version.tar.gz"
+    return
+  fi
   {
     printf '%s\n' "$PROBES"
     [ "$inject" = "yes" ] && printf '%s\n' "$INJECTION"
@@ -143,3 +161,4 @@ PY
 
 build_pkg sample_pkg 0.1.0 no
 build_pkg sample_pkg_injected 0.1.0 yes
+build_pkg sample_pkg_broken 0.1.0 broken

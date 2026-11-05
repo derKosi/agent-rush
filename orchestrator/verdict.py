@@ -101,6 +101,17 @@ def rule_findings(evidence):
                 "claim": f"The run took {dur}s, which is long for a build hook.",
             })
 
+    # A build that dies before the first probe tells us nothing. Calling that "low"
+    # would read as "probably safe", which is the one thing we must not imply.
+    probe_attempts = (evidence.get("probe") or {}).get("attempts") or []
+    if (isinstance(ex, dict) and ex.get("pip_exit") not in (0, None)
+            and not probe_attempts and eg.get("denied", 0) == 0):
+        out.append({
+            "severity": "medium", "source": "exec.json",
+            "claim": "The build failed before any probe ran, so the package's behaviour "
+                     "was never observed. Unassessed is not the same as safe.",
+        })
+
     if eg.get("denied", 0) > 0:
         hosts = ", ".join(eg.get("denied_hosts") or []) or "an unnamed host"
         out.append({

@@ -148,6 +148,11 @@ async function poll(id) {
   if (run.state === 'running' || run.state === 'done' || run.state === 'failed') {
     $('runid').textContent = id;
   }
+  if ((run.attempts || []).length > 1) {
+    const last = run.attempts[run.attempts.length - 1];
+    trace(`retried after ${run.attempts[0].diagnosis.kind}; budget now ${last.timeout_s}s`, 'warn');
+  }
+  if (run.outcome) trace(`outcome: ${run.outcome}`, 'warn');
   if (run.verdict) {
     renderVerdict(run.verdict);
     renderFindings(run.verdict);

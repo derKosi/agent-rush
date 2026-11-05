@@ -11,6 +11,7 @@ import time
 from pathlib import Path
 
 from . import planner
+from . import recovery
 from . import sandbox
 from .verdict import egress_summary, verdict, _read_json
 
@@ -138,21 +139,42 @@ def execute(store, run_id, package_path, question=None, *, egress_mode="none",
         except Exception as exc:  # noqa: BLE001
             inspection = {"exit_code": None, "output": "", "error": str(exc)}
 
-    try:
-        result = sandbox.run_package(
-            Path(package_path),
-            store.dir_for(run_id),
-            task_id=run_id,
-            timeout_s=timeout_s,
-            egress_mode=egress_mode,
-            probes=planner.probes_env(plan_result),
-        )
-    except Exception as exc:  # noqa: BLE001 - store it, show it, do not swallow it
-        return store.update(run_id, state="failed", finished=_now(),
-                            error=f"{type(exc).__name__}: {exc}")
+    attempts = []
+    current_timeout = timeout_s
+    while True:
+        try:
+            result = sandbox.run_package(
+                Path(package_path),
+                store.dir_for(run_id),
+                task_id=run_id,
+                timeout_s=current_timeout,
+                egress_mode=egress_mode,
+                probes=planner.probes_env(plan_result),
+            )
+        except Exception as exc:  # noqa: BLE001 - store it, show it, do not swallow it
+            return store.update(run_id, state="failed", finished=_now(),
+                                error=f"{type(exc).__name__}: {exc}")
 
-    evidence = collect_evidence(store.dir_for(run_id), result, Path(package_path))
-    evidence["inspection"] = _parse_inspection(inspection)
+        evidence = collect_evidence(store.dir_for(run_id), result, Path(package_path))
+        evidence["inspection"] = _parse_inspection(inspection)
+
+        diagnosis = recovery.diagnose(result, evidence)
+        attempts.append({
+            "attempt": len(attempts) + 1,
+            "timeout_s": current_timeout,
+            "exit_code": result.get("exit_code"),
+            "timed_out": bool(result.get("timed_out")),
+            "diagnosis": diagnosis,
+        })
+
+        # One retry, and only when the failure was our limit rather than the package.
+        if diagnosis and diagnosis["retryable"] and len(attempts) == 1:
+            bumped = recovery.next_timeout(current_timeout)
+            if bumped:
+                current_timeout = bumped
+                store.update(run_id, attempts=attempts)
+                continue
+        break
 
     try:
         v = verdict(evidence, question=question, chat=chat, model=model)
@@ -165,4 +187,6 @@ def execute(store, run_id, package_path, question=None, *, egress_mode="none",
         run_id, state="done", finished=_now(),
         evidence=evidence, verdict=v,
         sandbox=evidence["sandbox"],
+        attempts=attempts,
+        outcome=(attempts[-1]["diagnosis"] or {}).get("kind") if attempts else None,
     )
