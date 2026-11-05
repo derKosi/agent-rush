@@ -231,12 +231,34 @@ fetch('health').then((r) => r.json()).then((h) => {
 
 // --- history -------------------------------------------------------------------------
 // Real runs from the store, not a mock: this is the product's own record of what it did.
+function median(values) {
+  const clean = values.filter((v) => typeof v === 'number' && v >= 0).sort((a, b) => a - b);
+  if (!clean.length) return null;
+  const mid = Math.floor(clean.length / 2);
+  return clean.length % 2 ? clean[mid] : (clean[mid - 1] + clean[mid]) / 2;
+}
+
+function renderStats(runs) {
+  const today = new Date().toISOString().slice(0, 10);
+  const runsToday = runs.filter((r) => (r.created || '').slice(0, 10) === today).length;
+  const blocked = runs.filter((r) => (r.verdict || {}).risk === 'high').length;
+  const durations = runs.map((r) => ((r.evidence || {}).sandbox || {}).duration_s);
+  const med = median(durations);
+
+  $('stat-runs').textContent = String(runsToday);
+  $('stat-blocked').textContent = String(blocked);
+  $('stat-duration').textContent = med === null ? '—' : `${Math.round(med)}s`;
+}
+
 async function loadHistory() {
   const list = $('history-list');
   try {
-    const res = await fetch('runs?limit=8');
+    const res = await fetch('runs?limit=50');
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const { runs } = await res.json();
+    const payload = await res.json();
+    const all = payload.runs || [];
+    const runs = all.slice(0, 8);
+    renderStats(all);
     $('history-count').textContent = runs.length ? `${runs.length}` : '';
     list.innerHTML = '';
     if (!runs.length) {
@@ -278,3 +300,27 @@ async function loadHistory() {
 }
 
 loadHistory();
+
+
+// --- theme ---------------------------------------------------------------------------
+function setTheme(next) {
+  document.documentElement.dataset.theme = next;
+  const toggle = $('theme-toggle');
+  if (toggle) {
+    toggle.textContent = next === 'light' ? '\u2600' : '\u263e';
+    toggle.title = next === 'light' ? 'Switch to dark' : 'Switch to light';
+  }
+  try { localStorage.setItem('ar-theme', next); } catch (e) {}
+}
+
+setTheme(document.documentElement.dataset.theme || 'dark');
+
+$('theme-toggle').addEventListener('click', () => {
+  const now = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
+  setTheme(now);
+});
+
+$('new-run').addEventListener('click', () => {
+  $('pkg').focus();
+  document.getElementById('task').scrollIntoView({ behavior: 'smooth', block: 'center' });
+});

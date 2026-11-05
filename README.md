@@ -33,10 +33,10 @@ See [`docs/provenance.md`](docs/provenance.md) for the file-by-file record of wh
 before the event and what was built during it. That distinction is a rule of this hackathon,
 so it is tracked explicitly rather than asserted.
 
-![Agent Rush: one run, plan and verdict visible](docs/screenshots/ui-run.png)
+![Agent Rush: the run dashboard](docs/screenshots/ui-dashboard.png)
 
-*A real run on the Vultr VM: the plan the model chose, the verdict with the injection
-badge, and the evidence behind it.*
+*The live instance: runs today, how many were blocked, and the last eight runs — real
+records from the store, not a mock. The account chip is demo data and says so.*
 
 ![The same run further down: findings with their source, including the injection finding](docs/screenshots/ui-injection.png)
 
