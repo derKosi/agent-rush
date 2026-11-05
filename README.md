@@ -169,7 +169,7 @@ Example workflow step and the JSON shape: [`docs/ci.md`](docs/ci.md).
 
 ## Testing
 
-82 tests, 1190 lines against 2053 lines of product code. Most of them run without Docker.
+89 tests, 1300 lines against 2200 lines of product code. Most of them run without Docker.
 
 | Area | Covered by | What that means |
 |---|---|---|
@@ -178,6 +178,7 @@ Example workflow step and the JSON shape: [`docs/ci.md`](docs/ci.md).
 | Sandbox wrapper | 7 tests | artifact collection, proxy log, cleanup — against a stub runner |
 | Dependencies + runtime | 11 tests | PKG-INFO parsing, runtime detection from archive contents |
 | Guard, recovery, batch, API | 27 tests | rate limits, retry rules, batch report, endpoint contracts |
+| Dependency reputation | 7 tests | filename parsing, alias deduplication, disabled mode, lookup failure |
 
 What is **not** covered automatically, and why:
 
@@ -208,6 +209,7 @@ prop.
 | **Phase 1** | `pip install` / `npm install` runs the install hook, with the probes the planner chose |
 | **Phase 2** | the installed distribution is imported, top-level modules only |
 | **Evidence** | egress attempts (proxy log), filesystem diff, process result, spawns |
+| **Reputation** | each resolved wheel is checked against OSV (osv.dev); `AR_OSV=off` disables |
 | **Dependencies** | declared ones are fetched as **wheels**, hashed and listed — **never executed** (`--only-binary=:all:`) |
 | **After import** | not observed. A payload that waits for a request handler is out of scope |
 | **Dead code** | not analysed. Paths that never execute are never seen |
@@ -221,11 +223,12 @@ Other ecosystems have the same shape and need their own adapter — not shipped:
 | NuGet | MSBuild targets | not shipped — `dotnet restore` + a load pass |
 | Go | none by default | not shipped — `go build` + `init()` at first use |
 
-Dependencies are now *visible* but not *judged*: the tree is fetched as wheels and hashed,
+Dependencies are *visible*, hashed, and checked for known advisories: the tree is fetched as wheels and hashed,
 so you can see what a package would pull in and diff it between releases. Those wheels are
-not installed and their code never runs, which means a malicious dependency is listed, not
-caught. Closing that would mean running each wheel through the same two phases — feasible,
-not built.
+not installed and their code never runs, which means a *novel* malicious dependency is listed,
+not caught. Known-vulnerable versions are caught: OSV is queried per resolved artifact and a
+hit becomes a finding. Closing the rest means running each wheel through the same two phases —
+feasible, not built. Details and the rest of the backlog: [`docs/roadmap.md`](docs/roadmap.md).
 
 ## Architecture
 

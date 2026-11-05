@@ -131,6 +131,19 @@ EOF
 build_pkg() {
   local name="$1" version="$2" inject="$3"
   mkdir -p "$BUILD/$name-$version"
+  if [ "$inject" = "vuln" ]; then
+    printf 'from setuptools import setup\n\nsetup(name="sample-pkg-vuln", version="%s",\n      description="synthetic fixture with a known-vulnerable dependency",\n      install_requires=["urllib3==1.24.1"], py_modules=[])\n' \
+      "$version" > "$BUILD/$name-$version/setup.py"
+    printf 'Metadata-Version: 2.1\nName: sample-pkg-vuln\nVersion: %s\nRequires-Dist: urllib3 (==1.24.1)\n\nSynthetic fixture.\n' \
+      "$version" > "$BUILD/$name-$version/PKG-INFO"
+    printf 'Synthetic probe package. Not a real library. See fixtures/make_fixture.sh.\n' \
+      > "$BUILD/$name-$version/README.md"
+    COPYFILE_DISABLE=1 tar czf "$HERE/$name-$version.tar.gz" --exclude '._*' \
+      -C "$BUILD" "$name-$version"
+    echo "built: $name-$version.tar.gz"
+    return
+  fi
+
   if [ "$inject" = "node" ]; then
     # npm tarballs have a single top-level directory called package/.
     mkdir -p "$BUILD/$name-$version/package"
@@ -211,3 +224,4 @@ build_pkg sample_pkg_broken 0.1.0 broken
 build_pkg sample_pkg_lazy 0.1.0 lazy
 build_pkg sample_pkg_deps 0.1.0 deps
 build_pkg sample_pkg_node 0.1.0 node
+build_pkg sample_pkg_vuln 0.1.0 vuln

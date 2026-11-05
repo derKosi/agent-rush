@@ -104,7 +104,7 @@ one verified containment moment recorded in the README with the exact observatio
 
 ## Numbers for the form
 
-- 82 tests, most of them runnable without Docker
-- 6 fixtures: honest, prompt-injected, broken, hostile-at-import, with dependencies, npm
+- 89 tests, most of them runnable without Docker
+- 7 fixtures: honest, prompt-injected, broken, hostile-at-import, dependencies, npm, vulnerable dependency
 - 12 slides, 1920×1080 cover
 - Public instance: `vc2-1c-2gb`, Frankfurt, ~$0.014/h

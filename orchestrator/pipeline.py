@@ -14,6 +14,7 @@ from pathlib import Path
 from . import deps as deps_mod
 from . import planner
 from . import runtime as runtime_mod
+from . import reputation
 from . import recovery
 from . import sandbox
 from .verdict import egress_summary, verdict, _read_json
@@ -227,15 +228,22 @@ def execute(store, run_id, package_path, question=None, *, egress_mode="none",
 
     # Phase 3: make the dependency tree visible. Network on, package code untouched.
     declared = deps_mod.declared_dependencies(package_path)
-    if os.environ.get("AR_DEPS_PASS", "on").lower() != "off":
+    # No declared dependencies means no container: spinning one up to fetch nothing is
+    # a wasted run and makes the test suite depend on Docker for no reason.
+    if not declared:
+        evidence["dependencies"] = {"declared": [], "resolved": [],
+                                    "skipped": "no declared dependencies"}
+    elif os.environ.get("AR_DEPS_PASS", "on").lower() != "off":
         try:
             resolved = sandbox.run_resolve(
                 Path(package_path), store.dir_for(run_id), declared,
                 task_id=run_id, timeout_s=max(120, current_timeout),
             )
+            vulns = reputation.check(resolved.get("resolved") or [])
             evidence["dependencies"] = {
                 "declared": declared,
                 "resolved": resolved.get("resolved") or [],
+                "vulnerabilities": vulns,
                 "exit_code": resolved.get("exit_code"),
                 "duration_s": resolved.get("duration_s"),
                 "log_tail": (resolved.get("log_tail") or "")[-1200:],

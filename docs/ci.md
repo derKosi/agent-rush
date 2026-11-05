@@ -121,6 +121,7 @@ This is not a general supply-chain firewall. It tests **one artifact, in two pha
 | Phase 1 | `pip install` runs the build hook, with the chosen probes |
 | Phase 2 | the installed distribution is imported, top-level modules only |
 | Observed | egress attempts, filesystem changes, process result, spawns |
+| Reputation | resolved artifacts are checked against OSV; set `AR_OSV=off` to skip |
 | **Not** observed | dependency *behaviour* (the tree is fetched and hashed, never executed), what runs later at request time, code paths never executed |
 
 Other ecosystems — npm `postinstall`, Cargo `build.rs`, NuGet MSBuild targets, Go `init()` —

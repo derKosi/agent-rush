@@ -175,7 +175,23 @@ def rule_findings(evidence):
                      f"hashed but not executed: "
                      + ", ".join(d["file"] for d in dep["resolved"][:5]),
         })
-    elif dep.get("declared") and not dep.get("resolved"):
+    vulns = dep.get("vulnerabilities") or []
+    for item in vulns:
+        if item.get("vulns"):
+            ids = ", ".join(v.get("id") for v in item["vulns"][:3])
+            out.append({
+                "severity": "medium", "source": "dependencies",
+                "claim": f"{item['package']} {item['version']} has {item['count']} known "
+                         f"advisory(ies) in OSV: {ids}",
+            })
+        elif item.get("error"):
+            out.append({
+                "severity": "info", "source": "dependencies",
+                "claim": f"Reputation lookup for {item['package']} failed "
+                         f"({item['error']}); treat its dependency as unchecked.",
+            })
+
+    if dep.get("declared") and not dep.get("resolved"):
         out.append({
             "severity": "medium", "source": "dependencies",
             "claim": f"The package declares {len(dep['declared'])} dependency(ies) that could "
