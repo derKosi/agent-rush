@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Agent Rush</title>
-<link rel="stylesheet" href="app.css?v=23">
+<link rel="stylesheet" href="app.css?v=32">
 <script>
   try { var t = localStorage.getItem('ar-theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
 </script>
@@ -26,18 +26,29 @@
     <ul class="rail" id="run-list"></ul>
 
     <div class="rail-foot">
-      <div class="rail-model"><span id="model-chip">…</span></div>
-      <div class="rail-actions">
+      <a class="rail-link" href="/api/docs" target="_blank" rel="noopener">API reference</a>
+      <a class="rail-link" href="https://github.com/derKosi/agent-rush" target="_blank" rel="noopener">Source</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div class="crumbs">
+        <span class="crumb-org">Acme Corp.</span>
+        <span class="crumb-sep">/</span>
+        <span class="crumb-here">Runs</span>
+      </div>
+      <div class="topbar-right">
+        <span class="modelchip" id="model-chip">…</span>
         <button class="icon-btn" id="theme-toggle" title="Switch theme">☾</button>
         <div class="account">
           <span class="avatar">A</span>
           <span class="who"><strong>Alice</strong><small>Owner <em class="demo">demo</em></small></span>
         </div>
       </div>
-    </div>
-  </aside>
+    </header>
 
-  <main class="main">
+    <div class="content">
     <section class="placeholder" id="placeholder">
       <h1>Pick a run</h1>
       <p>Every package is installed, imported and resolved inside a sandbox on Vultr. Pick a run
@@ -63,6 +74,7 @@
       <section class="pane" id="pane-deps" hidden></section>
       <section class="pane" id="pane-evidence" hidden></section>
     </div>
+    </div>
   </main>
 </div>
 
@@ -82,6 +94,6 @@
   </form>
 </dialog>
 
-<script src="app.js?v=25"></script>
+<script src="app.js?v=30"></script>
 </body>
 </html>
