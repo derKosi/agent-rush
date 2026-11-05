@@ -1,485 +1,353 @@
-// Wires the shell to the API. No framework: the whole product is three endpoints,
-// and a build step would cost more than it explains.
+// One page, one run. The sidebar is the list; the main area is the document.
 const $ = (id) => document.getElementById(id);
-let timer = null;
-
-function setStatus(text, kind) {
-  const el = $('status');
-  // Defensive on purpose: a missing element must never take the rest of the page down
-  // with it. That is exactly what happened when the top bar was redesigned.
-  if (!el) return;
-  el.textContent = text;
-  el.className = 'status' + (kind ? ' ' + kind : '');
-}
-
-function trace(message, kind) {
-  const list = $('trace-list');
-  const empty = list.querySelector('.empty');
-  if (empty) empty.remove();
-  const li = document.createElement('li');
-  const t = new Date().toISOString().slice(11, 19);
-  li.className = kind || '';
-  li.textContent = `${t}  ${message}`;
-  list.appendChild(li);
-  list.scrollTop = list.scrollHeight;   // scroll the list, never the page
-}
-
-function renderPlan(plan) {
-  $('plan-source').textContent = plan.source === 'model' ? 'model' : 'default';
-  const chips = $('probes');
-  chips.innerHTML = '';
-  (plan.probes || []).forEach((p) => {
-    const s = document.createElement('span');
-    s.className = 'chip';
-    s.textContent = p;
-    chips.appendChild(s);
-  });
-  if ((plan.rejected || []).length) {
-    const s = document.createElement('span');
-    s.className = 'chip rejected';
-    s.textContent = 'rejected: ' + plan.rejected.join(', ');
-    chips.appendChild(s);
-  }
-  $('plan-reason').textContent = plan.reason || '';
-}
-
-function modelLabel(run) {
-  const v = run.verdict || {};
-  const name = run.model || v.model;
-  if (name) return name;
-  return v.model_used ? 'model' : 'rules only';
-}
-
-function renderHero(run) {
-  const hero = $('hero');
-  const v = run.verdict || {};
-  if (!hero || !v.risk) return;
-  const level = v.risk;
-  hero.hidden = false;
-  hero.className = 'hero ' + (level === 'high' ? 'high' : level === 'medium' ? 'medium' : 'low');
-
-  const risk = $('hero-risk');
-  risk.textContent = level;
-  risk.className = 'badge ' + (level === 'high' ? 'high' : level === 'low' ? 'low' : 'muted');
-
-  $('hero-pkg').textContent = ((run.task || {}).package || '—').split('/').pop();
-  $('hero-sub').textContent = (run.task || {}).question || '';
-  $('hero-model').textContent = modelLabel(run);
-  const dur = ((run.evidence || {}).sandbox || {}).duration_s;
-  $('hero-duration').textContent = dur ? `${dur}s` : '';
-  $('hero-open').href = `?run=${run.id}`;
-
-  const list = $('hero-findings');
-  list.innerHTML = '';
-  const findings = (v.findings || []).filter((f) => f.severity === 'high' || f.severity === 'medium').slice(0, 3);
-  if (!findings.length) {
-    const li = document.createElement('li');
-    li.className = 'none';
-    li.textContent = 'No high or medium findings. Nothing was blocked, and nothing was observed.';
-    list.appendChild(li);
-    return;
-  }
-  for (const f of findings) {
-    const li = document.createElement('li');
-    li.className = f.severity || 'info';
-    const sev = document.createElement('span');
-    sev.className = 'sev';
-    sev.textContent = f.severity;
-    li.appendChild(sev);
-    li.appendChild(document.createTextNode(f.claim || ''));
-    list.appendChild(li);
-  }
-}
+const el = (tag, cls, text) => {
+  const node = document.createElement(tag);
+  if (cls) node.className = cls;
+  if (text !== undefined) node.textContent = text;
+  return node;
+};
 
 let DEP_THRESHOLD = 7;
+let currentId = null;
+let pollTimer = null;
 
-function parseArtifact(file) {
-  const match = /^(.+?)-(\d[^-]*)/.exec(file || '');
-  return match ? { name: match[1], version: match[2] } : { name: file || '—', version: '' };
+const RISK_CLASS = (risk) => (risk === 'high' ? 'high' : risk === 'medium' ? 'medium' : risk === 'low' ? 'low' : '');
+const modelLabel = (run) => run.model || (run.verdict || {}).model || ((run.verdict || {}).model_used ? 'model' : 'rules only');
+const shortPkg = (path) => String(path || '—').split('/').pop();
+
+async function getJSON(path) {
+  const res = await fetch(path);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
 }
 
-function renderDependencies(run) {
-  const panel = $('deps-panel');
-  if (!panel) return;
+/* ---------------- sidebar ---------------- */
+async function loadRuns() {
+  const list = $('run-list');
+  try {
+    const { runs } = await getJSON('runs?limit=24');
+    list.innerHTML = '';
+    if (!runs.length) {
+      list.appendChild(el('li', 'empty', 'no runs yet'));
+      return;
+    }
+    for (const run of runs) {
+      const li = el('li');
+      if (run.id === currentId) li.classList.add('active');
+      const dot = el('span', 'dot ' + RISK_CLASS((run.verdict || {}).risk));
+      const name = el('span', 'name', shortPkg((run.task || {}).package));
+      const time = el('span', 'time', (run.created || '').slice(11, 19) + ' · ' + ((run.verdict || {}).risk || run.state));
+      li.append(dot, name, time);
+      li.addEventListener('click', () => selectRun(run.id));
+      list.appendChild(li);
+    }
+  } catch (err) {
+    list.innerHTML = '';
+    list.appendChild(el('li', 'empty', 'history unavailable'));
+  }
+}
+
+/* ---------------- run view ---------------- */
+function renderHead(run) {
+  const risk = (run.verdict || {}).risk;
+  const badge = $('risk-badge');
+  badge.textContent = risk || run.state || '—';
+  badge.className = 'badge ' + RISK_CLASS(risk);
+
+  $('pkg-name').textContent = shortPkg((run.task || {}).package);
+  const dur = ((run.evidence || {}).sandbox || {}).duration_s;
+  $('run-meta').textContent = [modelLabel(run), dur ? `${dur}s` : null, run.created ? run.created.replace('T', ' ').replace('Z', '') : null]
+    .filter(Boolean).join('  ·  ');
+  $('run-question').textContent = (run.task || {}).question || '';
+}
+
+function renderSummary(run) {
+  const pane = $('pane-summary');
+  const v = run.verdict || {};
+  pane.innerHTML = '';
+
+  if (v.summary) pane.appendChild(el('p', 'summary-text', v.summary));
+
+  const findings = v.findings || [];
+  const serious = findings.filter((f) => f.severity === 'high' || f.severity === 'medium');
+  const minor = findings.filter((f) => f.severity !== 'high' && f.severity !== 'medium');
+
+  const list = (items) => {
+    const ul = el('ul', 'findings');
+    for (const f of items) {
+      const li = el('li', f.severity || 'info');
+      li.appendChild(el('span', 'sev', f.severity || 'info'));
+      li.appendChild(el('span', 'claim', f.claim || ''));
+      li.appendChild(el('span', 'src', ` — ${f.source || ''}`));
+      ul.appendChild(li);
+    }
+    return ul;
+  };
+
+  if (serious.length) {
+    pane.appendChild(el('div', 'section-label', `Findings · ${serious.length}`));
+    pane.appendChild(list(serious));
+  } else {
+    pane.appendChild(el('div', 'section-label', 'Findings'));
+    pane.appendChild(el('p', 'note', 'Nothing at medium or above. The run produced evidence, not concerns.'));
+  }
+
+  // Info-level notes are context, not findings. Folded away by default.
+  if (minor.length) {
+    const details = el('details', 'fold');
+    details.appendChild(el('summary', '', `${minor.length} informational note(s)`));
+    details.appendChild(list(minor));
+    pane.appendChild(details);
+  }
+
+  const rejected = v.rejected_claims || [];
+  if (rejected.length) {
+    pane.appendChild(el('div', 'section-label', `Veto · ${rejected.length} claim(s) dropped`));
+    const ul = el('ul', 'findings');
+    for (const r of rejected) {
+      const li = el('li', 'high');
+      li.appendChild(el('span', 'sev', 'rejected'));
+      li.appendChild(el('span', 'claim', `“${r.claim}” — cited ${r.source}, which is not in this run`));
+      ul.appendChild(li);
+    }
+    pane.appendChild(ul);
+  }
+
+  const notes = v.notes || [];
+  if (notes.length) pane.appendChild(el('p', 'note', notes.join(' · ')));
+}
+
+function parseArtifact(file) {
+  const m = /^(.+?)-(\d[^-]*)/.exec(file || '');
+  return m ? { name: m[1], version: m[2] } : { name: file || '—', version: '' };
+}
+
+function renderDeps(run) {
+  const pane = $('pane-deps');
   const dep = (run.evidence || {}).dependencies || {};
   const resolved = dep.resolved || [];
   const declared = dep.declared || [];
-  if (!resolved.length && !declared.length) { panel.hidden = true; return; }
+  pane.innerHTML = '';
 
-  panel.hidden = false;
+  if (!resolved.length && !declared.length) {
+    pane.appendChild(el('p', 'note', 'This package declares no dependencies.'));
+    return;
+  }
+
   const vulns = dep.vulnerabilities || [];
   const outdated = dep.outdated || [];
   const scores = vulns.map((v) => v.max_score).filter((n) => typeof n === 'number');
   const worst = scores.length ? Math.max(...scores) : 0;
 
-  $('deps-count').textContent = resolved.length ? `${resolved.length} resolved` : 'none resolved';
+  if (resolved.length) {
+    const row = el('div', 'gauge-row');
+    const gauge = el('div', 'gauge');
+    gauge.append(el('div', 'zone green'), el('div', 'zone amber'), el('div', 'zone red'), el('div', 'threshold'));
+    const mark = el('div', 'mark');
+    mark.style.left = `${Math.min(100, worst * 10)}%`;
+    gauge.appendChild(mark);
 
-  const mark = $('deps-mark');
-  mark.style.left = `${Math.min(100, worst * 10)}%`;
-  const level = worst >= DEP_THRESHOLD ? 'bad' : worst >= 4 ? 'warn' : 'good';
-  $('deps-caption').innerHTML =
-    `<span class="dot ${level}"></span>worst advisory <strong>${worst ? worst.toFixed(1) : '—'}</strong> / 10` +
-    ` &nbsp;·&nbsp; block from ${DEP_THRESHOLD}`;
+    const caption = el('div', 'gauge-caption');
+    caption.innerHTML = `worst advisory <strong>${worst ? worst.toFixed(1) : '—'}</strong> / 10 · block from ${DEP_THRESHOLD}`;
+    row.append(gauge, caption);
+    pane.appendChild(row);
 
-  const body = $('deps-table').querySelector('tbody');
-  body.innerHTML = '';
-  for (const item of resolved) {
-    const { name, version } = parseArtifact(item.file);
-    const vuln = vulns.find((v) => v.package === name) || null;
-    const behind = outdated.find((o) => o.package === name) || null;
+    const table = el('table', 'deps');
+    const thead = el('thead');
+    const hr = el('tr');
+    ['Package', 'Version', 'sha256', 'Advisories', 'State'].forEach((h) => hr.appendChild(el('th', '', h)));
+    thead.appendChild(hr);
+    table.appendChild(thead);
 
-    const tr = document.createElement('tr');
+    const tbody = el('tbody');
+    for (const item of resolved) {
+      const { name, version } = parseArtifact(item.file);
+      const vuln = vulns.find((v) => v.package === name);
+      const behind = outdated.find((o) => o.package === name);
+      const tr = el('tr');
 
-    const tdName = document.createElement('td');
-    tdName.className = 'pkgname';
-    tdName.textContent = name;
+      tr.appendChild(el('td', 'mono', name));
+      tr.appendChild(el('td', 'mono', version + (behind ? ` → ${behind.latest}` : '')));
 
-    const tdVersion = document.createElement('td');
-    tdVersion.className = 'mono';
-    tdVersion.textContent = version + (behind ? ` → ${behind.latest}` : '');
+      const hash = el('td', 'mono muted', (item.sha256 || '').slice(0, 12) + '…');
+      hash.title = item.sha256 || '';
+      tr.appendChild(hash);
 
-    const tdHash = document.createElement('td');
-    tdHash.className = 'mono';
-    tdHash.textContent = (item.sha256 || '').slice(0, 12) + '…';
-    tdHash.title = item.sha256 || '';
+      const adv = el('td');
+      if (vuln && vuln.count) {
+        const pill = el('span', 'pill ' + (vuln.max_score >= DEP_THRESHOLD ? 'bad' : 'warn'), `${vuln.count} · ${vuln.max_score ?? '?'}`);
+        pill.title = (vuln.vulns || []).map((v) => `${v.id} ${v.severity}`).join('\n');
+        adv.appendChild(pill);
+      } else {
+        adv.appendChild(el('span', 'pill good', 'none'));
+      }
+      tr.appendChild(adv);
 
-    const tdAdv = document.createElement('td');
-    if (vuln && vuln.count) {
-      const pill = document.createElement('span');
-      pill.className = 'pill ' + (vuln.max_score >= DEP_THRESHOLD ? 'bad' : 'warn');
-      pill.textContent = `${vuln.count} · ${vuln.max_score ?? '?'}`;
-      pill.title = (vuln.vulns || []).map((v) => `${v.id} ${v.severity}`).join('\n');
-      tdAdv.appendChild(pill);
-    } else {
-      const pill = document.createElement('span');
-      pill.className = 'pill good';
-      pill.textContent = 'none';
-      tdAdv.appendChild(pill);
+      const state = el('td');
+      if (vuln && vuln.count && vuln.max_score >= DEP_THRESHOLD) state.appendChild(el('span', 'pill bad', 'blocked'));
+      else if (behind) state.appendChild(el('span', 'pill warn', 'behind'));
+      else state.appendChild(el('span', 'pill good', 'ok'));
+      tr.appendChild(state);
+
+      tbody.appendChild(tr);
     }
-
-    const tdState = document.createElement('td');
-    const state = document.createElement('span');
-    if (vuln && vuln.count && vuln.max_score >= DEP_THRESHOLD) {
-      state.className = 'pill bad'; state.textContent = 'blocked';
-    } else if (behind) {
-      state.className = 'pill warn'; state.textContent = 'behind';
-    } else {
-      state.className = 'pill good'; state.textContent = 'ok';
-    }
-    tdState.appendChild(state);
-
-    tr.append(tdName, tdVersion, tdHash, tdAdv, tdState);
-    body.appendChild(tr);
-  }
-
-  const note = $('deps-note');
-  if (!resolved.length) {
-    note.textContent = `Declared: ${declared.join(', ')} — nothing could be fetched, so nothing is known about it.`;
-  } else if (!vulns.length) {
-    note.textContent = 'Hashes are recorded for every artifact; no known advisories for this tree.';
+    table.appendChild(tbody);
+    pane.appendChild(table);
   } else {
-    note.textContent = 'Wheels are fetched and hashed, never installed. Advisories come from OSV; the score is the advisory label, or a coarse reading of its impact metrics.';
-  }
-}
-
-function renderVerdict(v) {
-  const risk = $('risk');
-  risk.innerHTML = '';
-  const badge = document.createElement('span');
-  const level = v.risk || 'unknown';
-  badge.className = 'badge ' + (level === 'high' ? 'high' : level === 'low' ? 'low' : 'muted');
-  badge.textContent = level;
-  risk.appendChild(badge);
-  if (v.model_used) {
-    const m = document.createElement('span');
-    m.className = 'tag';
-    m.textContent = 'model';
-    risk.appendChild(m);
-  }
-  $('summary').textContent = v.summary || '';
-
-  const rejected = v.rejected_claims || [];
-  const box = $('rejected');
-  box.innerHTML = '';
-  if (rejected.length) {
-    const head = document.createElement('div');
-    head.className = 'veto-head';
-    head.textContent = `veto: ${rejected.length} model claim(s) dropped`;
-    box.appendChild(head);
-    for (const r of rejected) {
-      const row = document.createElement('div');
-      row.className = 'veto-row';
-      row.textContent = `“${r.claim}” — cited ${r.source}, which is not in this run`;
-      box.appendChild(row);
-    }
-  } else {
-    box.textContent = (v.notes || []).join(' · ');
+    pane.appendChild(el('p', 'note', `Declared: ${declared.join(', ')} — nothing could be fetched.`));
   }
 
-  // A hostile package that talks to the reader is worth a badge, not a footnote.
-  const injected = (v.findings || []).some(
-    (f) => (f.source === 'package_source_excerpt' || f.source === 'build_log_tail')
-           && /instructions|directive/i.test(f.claim || ''));
-  if (injected) {
-    const badge = document.createElement('span');
-    badge.className = 'tag warn';
-    badge.textContent = 'injection detected';
-    risk.appendChild(badge);
-  }
-}
-
-function renderFindings(v) {
-  const list = $('findings');
-  const items = v.findings || [];
-  list.innerHTML = '';
-  $('finding-count').textContent = items.length ? `${items.length}` : '';
-  if (!items.length) {
-    const li = document.createElement('li');
-    li.className = 'empty';
-    li.textContent = 'no findings';
-    list.appendChild(li);
-    return;
-  }
-  for (const f of items) {
-    const li = document.createElement('li');
-    li.className = 'finding ' + (f.severity || 'info');
-    li.innerHTML = `<span class="sev">${f.severity || 'info'}</span>
-      <span class="src">${f.source || ''}</span>
-      <span class="claim"></span>`;
-    li.querySelector('.claim').textContent = f.claim || '';
-    list.appendChild(li);
-  }
+  const note = vulns.length
+    ? 'Wheels are fetched and hashed, never installed. Scores come from the advisory label, or a coarse reading of its impact metrics.'
+    : 'Hashes are recorded for every artifact; no known advisories for this tree.';
+  pane.appendChild(el('p', 'note', note));
 }
 
 function renderEvidence(run) {
+  const pane = $('pane-evidence');
   const ev = run.evidence || {};
-  const list = $('artifacts');
-  list.innerHTML = '';
+  const plan = run.plan || {};
+  pane.innerHTML = '';
+
+  const grid = el('div', 'ev-grid');
+
+  const left = el('div');
+  left.appendChild(el('div', 'section-label', 'Plan'));
+  const chips = el('div', 'chips');
+  (plan.probes || []).forEach((p) => chips.appendChild(el('span', 'chip', p)));
+  if (!(plan.probes || []).length) chips.appendChild(el('span', 'chip', 'none'));
+  left.appendChild(chips);
+  if (plan.reason) left.appendChild(el('p', 'note', plan.reason));
+
+  left.appendChild(el('div', 'section-label', 'Artifacts'));
+  const ul = el('ul', 'ev-list');
   const names = Object.keys(ev.artifacts || {}).sort();
-  if (!names.length) {
-    const li = document.createElement('li');
-    li.className = 'empty';
-    li.textContent = 'no artifacts';
-    list.appendChild(li);
-  }
+  if (!names.length) ul.appendChild(el('li', 'empty', 'none'));
   for (const name of names) {
-    const meta = ev.artifacts[name];
-    const li = document.createElement('li');
-    const a = document.createElement('a');
+    const li = el('li');
+    const a = el('a', '', name);
     a.href = `runs/${run.id}/artifacts/${encodeURIComponent(name)}`;
-    a.textContent = name;
     li.appendChild(a);
-    const size = document.createElement('span');
-    size.className = 'muted';
-    size.textContent = `  ${meta.bytes} B`;
-    li.appendChild(size);
-    list.appendChild(li);
+    li.appendChild(el('span', 'muted', `  ${(ev.artifacts[name] || {}).bytes} B`));
+    ul.appendChild(li);
   }
+  left.appendChild(ul);
+
   const eg = ev.egress || {};
-  $('egress').textContent = eg.collected
-    ? `egress: ${eg.denied} denied, ${eg.allowed} allowed` +
-      ((eg.denied_hosts || []).length ? ` — blocked: ${eg.denied_hosts.join(', ')}` : '')
-    : 'egress: no proxy log for this run';
+  left.appendChild(el('div', 'section-label', 'Egress'));
+  left.appendChild(el('p', 'note', eg.collected
+    ? `${eg.denied} denied, ${eg.allowed} allowed${(eg.denied_hosts || []).length ? ` — blocked: ${eg.denied_hosts.join(', ')}` : ''}`
+    : 'no proxy log for this run'));
+
+  const right = el('div');
+  right.appendChild(el('div', 'section-label', 'Timeline'));
+  const ol = el('ol', 'trace');
+  const events = [];
+  if (run.created) events.push([run.created, 'accepted', '']);
+  if ((run.plan || {}).source) events.push([null, `planned by ${plan.source}`, 'ok']);
+  (run.attempts || []).forEach((a) => events.push([null, `attempt ${a.attempt} · ${a.timeout_s}s budget`, a.diagnosis ? 'warn' : '']));
+  if (run.finished) events.push([run.finished, `finished · ${run.state}`, run.state === 'done' ? 'ok' : 'deny']);
+  for (const [ts, text, kind] of events) {
+    const li = el('li', kind, `${ts ? ts.slice(11, 19) + '  ' : ''}${text}`);
+    ol.appendChild(li);
+  }
+  right.appendChild(ol);
+
+  grid.append(left, right);
+  pane.appendChild(grid);
 }
 
-async function poll(id) {
-  const r = await fetch(`runs/${id}`);
-  if (!r.ok) throw new Error(`run ${id}: HTTP ${r.status}`);
-  const run = await r.json();
-  if (run.plan) renderPlan(run.plan);
-  if (run.state === 'running' || run.state === 'done' || run.state === 'failed') {
-    $('runid').textContent = id;
+async function selectRun(id) {
+  currentId = id;
+  clearInterval(pollTimer);
+  try {
+    const run = await getJSON(`runs/${id}`);
+    $('placeholder').hidden = true;
+    $('runview').hidden = false;
+    renderHead(run);
+    renderSummary(run);
+    renderDeps(run);
+    renderEvidence(run);
+    loadRuns();
+    if (run.state === 'running' || run.state === 'queued') {
+      pollTimer = setInterval(() => selectRun(id), 2000);
+    }
+  } catch (err) {
+    $('placeholder').hidden = false;
+    $('placeholder').querySelector('h1').textContent = 'Run not found';
   }
-  if ((run.attempts || []).length > 1) {
-    const last = run.attempts[run.attempts.length - 1];
-    trace(`retried after ${run.attempts[0].diagnosis.kind}; budget now ${last.timeout_s}s`, 'warn');
-  }
-  if (run.outcome) trace(`outcome: ${run.outcome}`, 'warn');
-  if (run.verdict) {
-    renderVerdict(run.verdict);
-    renderFindings(run.verdict);
-    renderHero(run);
-    renderDependencies(run);
-  }
-  renderEvidence(run);
-  setStatus(run.state, run.state === 'done' ? 'ok' : run.state === 'failed' ? 'bad' : 'busy');
-  if (run.state === 'done' || run.state === 'failed') {
-    clearInterval(timer);
-    timer = null;
-    $('run').disabled = false;
-    if (run.state === 'failed') trace('run failed: ' + (run.error || 'unknown'), 'deny');
-    else trace('verdict ready', 'ok');
-  }
-  return run;
 }
 
-async function start() {
-  document.body.classList.remove('run-view');
-  const pkg = $('pkg').value.trim();
-  $('run').disabled = true;
-  $('trace-list').innerHTML = '';
-  $('findings').innerHTML = '<li class="empty">waiting</li>';
-  $('note').textContent = '';
-  setStatus('queued', 'busy');
-  trace(`POST /tasks ${pkg}`);
+/* ---------------- tabs ---------------- */
+function showTab(name) {
+  const target = document.querySelector(`.tab[data-tab="${name}"]`);
+  if (!target) return;
+  for (const tab of document.querySelectorAll('.tab')) tab.classList.toggle('active', tab === target);
+  for (const pane of ['summary', 'deps', 'evidence']) {
+    $(`pane-${pane}`).hidden = pane !== name;
+  }
+}
+
+$('tabs').addEventListener('click', (event) => {
+  const button = event.target.closest('.tab');
+  if (button) showTab(button.dataset.tab);
+});
+
+// ?tab=deps makes a specific view linkable -- useful in a review or a recording.
+const wantTab = new URLSearchParams(location.search).get('tab');
+if (wantTab) showTab(wantTab);
+
+/* ---------------- new run ---------------- */
+const dialog = $('newrun');
+$('new-run').addEventListener('click', () => { $('form-note').textContent = ''; dialog.showModal(); });
+$('cancel').addEventListener('click', () => dialog.close());
+
+$('run-form').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const button = $('submit-run');
+  button.disabled = true;
+  $('form-note').textContent = 'submitting…';
   try {
     const res = await fetch('tasks', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        package: pkg,
+        package: $('pkg').value.trim(),
         question: $('q').value,
         egress_mode: $('proxy').checked ? 'proxy' : 'none',
       }),
     });
-    if (!res.ok) {
-      const body = await res.text();
-      throw new Error(`HTTP ${res.status}: ${body.slice(0, 180)}`);
-    }
+    if (!res.ok) throw new Error((await res.text()).slice(0, 160));
     const { id } = await res.json();
-    trace(`run ${id} accepted`, 'ok');
-    timer = setInterval(() => poll(id).catch(fail), 700);
-    await poll(id);
+    dialog.close();
+    await selectRun(id);
   } catch (err) {
-    fail(err);
+    $('form-note').textContent = String(err.message || err);
+  } finally {
+    button.disabled = false;
   }
-}
+});
 
-function fail(err) {
-  clearInterval(timer);
-  timer = null;
-  $('run').disabled = false;
-  setStatus('error', 'bad');
-  $('note').textContent = String(err.message || err);
-  trace('error: ' + (err.message || err), 'deny');
-}
-
-$('run').addEventListener('click', start);
-// Shareable link to a finished run: /?run=<id>
-const linked = new URLSearchParams(location.search).get('run');
-if (linked) {
-  document.body.classList.add('run-view');
-  trace(`loading shared run ${linked}`);
-  setStatus('loading', 'busy');
-  poll(linked).then((run) => {
-    if (run && (run.state === 'running' || run.state === 'queued')) {
-      timer = setInterval(() => poll(linked).catch(fail), 2000);
-    }
-  }).catch(fail);
-}
-
-fetch('health').then((r) => r.json()).then((h) => {
-  const chip = $('model-chip');
-  if (!chip) return;
-  if (typeof h.dep_threshold === 'number') DEP_THRESHOLD = h.dep_threshold;
-  if (h.model_configured) {
-    chip.textContent = `${h.model || 'model'} · reasoning ${h.reasoning || 'off'}`;
-    chip.classList.remove('off');
-  } else {
-    chip.textContent = 'rules only';
-    chip.classList.add('off');
-    $('note').textContent = 'no model configured: the verdict will be rule-based only';
-  }
-}).catch(() => {});
-
-
-// --- history -------------------------------------------------------------------------
-// Real runs from the store, not a mock: this is the product's own record of what it did.
-function median(values) {
-  const clean = values.filter((v) => typeof v === 'number' && v >= 0).sort((a, b) => a - b);
-  if (!clean.length) return null;
-  const mid = Math.floor(clean.length / 2);
-  return clean.length % 2 ? clean[mid] : (clean[mid - 1] + clean[mid]) / 2;
-}
-
-function renderStats(runs) {
-  const today = new Date().toISOString().slice(0, 10);
-  const runsToday = runs.filter((r) => (r.created || '').slice(0, 10) === today).length;
-  const blocked = runs.filter((r) => (r.verdict || {}).risk === 'high').length;
-  const durations = runs.map((r) => ((r.evidence || {}).sandbox || {}).duration_s);
-  const med = median(durations);
-
-  $('stat-runs').textContent = String(runsToday);
-  $('stat-blocked').textContent = String(blocked);
-  $('stat-duration').textContent = med === null ? '—' : `${Math.round(med)}s`;
-}
-
-async function loadHistory() {
-  const list = $('history-list');
-  try {
-    const res = await fetch('runs?limit=50');
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const payload = await res.json();
-    const all = payload.runs || [];
-    const runs = all.slice(0, 8);
-    renderStats(all);
-    $('history-count').textContent = runs.length ? `${runs.length}` : '';
-    list.innerHTML = '';
-    if (!runs.length) {
-      list.innerHTML = '<li class="empty">no runs yet</li>';
-      return;
-    }
-    for (const run of runs) {
-      const li = document.createElement('li');
-      li.className = 'run-row';
-
-      const when = document.createElement('span');
-      when.className = 'when';
-      when.textContent = (run.created || '').replace('T', ' ').replace('Z', '');
-
-      const pkg = document.createElement('span');
-      pkg.className = 'pkg';
-      pkg.textContent = ((run.task || {}).package || '—').split('/').pop();
-
-      const model = document.createElement('span');
-      model.className = 'model';
-      model.textContent = modelLabel(run);
-
-      const risk = document.createElement('span');
-      const level = (run.verdict || {}).risk || '—';
-      risk.className = 'badge ' + (level === 'high' ? 'high' : level === 'low' ? 'low' : 'muted');
-      risk.textContent = level;
-
-      const state = document.createElement('span');
-      state.className = 'state muted';
-      state.textContent = run.state;
-
-      li.append(when, pkg, model, risk, state);
-      li.addEventListener('click', () => {
-        history.replaceState(null, '', `?run=${run.id}`);
-        trace(`loading shared run ${run.id}`);
-        poll(run.id).catch(fail);
-      });
-      list.appendChild(li);
-    }
-  } catch (err) {
-    list.innerHTML = `<li class="empty">history unavailable: ${err.message}</li>`;
-  }
-}
-
-loadHistory();
-
-
-// --- theme ---------------------------------------------------------------------------
+/* ---------------- theme + boot ---------------- */
 function setTheme(next) {
   document.documentElement.dataset.theme = next;
   const toggle = $('theme-toggle');
-  if (toggle) {
-    toggle.textContent = next === 'light' ? '\u2600' : '\u263e';
-    toggle.title = next === 'light' ? 'Switch to dark' : 'Switch to light';
-  }
+  if (toggle) toggle.textContent = next === 'light' ? '☀' : '☾';
   try { localStorage.setItem('ar-theme', next); } catch (e) {}
 }
-
+$('theme-toggle').addEventListener('click', () => {
+  setTheme(document.documentElement.dataset.theme === 'light' ? 'dark' : 'light');
+});
 setTheme(document.documentElement.dataset.theme || 'dark');
 
-$('theme-toggle').addEventListener('click', () => {
-  const now = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
-  setTheme(now);
-});
+getJSON('health').then((h) => {
+  if (typeof h.dep_threshold === 'number') DEP_THRESHOLD = h.dep_threshold;
+  $('model-chip').textContent = h.model_configured
+    ? `${h.model} · reasoning ${h.reasoning}`
+    : 'rules only';
+}).catch(() => { $('model-chip').textContent = 'offline'; });
 
-$('new-run').addEventListener('click', () => {
-  document.body.classList.remove('run-view');
-  $('pkg').focus();
-  document.getElementById('task').scrollIntoView({ behavior: 'smooth', block: 'center' });
+loadRuns().then(() => {
+  const first = document.querySelector('#run-list li:not(.empty)');
+  if (first) first.click();
 });

@@ -3,154 +3,85 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Agent Rush — Package Triage</title>
-<link rel="stylesheet" href="app.css?v=12">
+<title>Agent Rush</title>
+<link rel="stylesheet" href="app.css?v=23">
 <script>
-  // Set the theme before first paint, otherwise the page flashes white.
-  try {
-    var stored = localStorage.getItem('ar-theme');
-    if (stored) document.documentElement.dataset.theme = stored;
-  } catch (e) {}
+  try { var t = localStorage.getItem('ar-theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
 </script>
 </head>
 <body>
-<header class="topbar">
-  <div class="brand">
-    <span class="mark"></span>
-    <span class="name">Agent Rush</span>
-    <span class="divider"></span>
-    <span class="workspace">Acme Corp.</span>
-  </div>
-
-  <nav class="topnav">
-    <a class="active" href="/">Runs</a>
-    <a href="/api/docs" target="_blank" rel="noopener">API</a>
-    <a href="https://github.com/derKosi/agent-rush" target="_blank" rel="noopener">Source</a>
-  </nav>
-
-  <div class="topright">
-    <span class="modelchip" id="model-chip" title="model used for planning and verdict">—</span>
-    <span class="status" id="status">idle</span>
-    <button class="icon-btn" id="theme-toggle" title="Switch theme" aria-label="Switch theme">☾</button>
-    <div class="account">
-      <span class="avatar" aria-hidden="true">A</span>
-      <span class="who">
-        <strong>Alice</strong>
-        <small>Owner · Acme Corp. <em class="demo">demo</em></small>
-      </span>
-      <span class="chev" aria-hidden="true">▾</span>
-    </div>
-  </div>
-</header>
-
-<main class="shell">
-  <div class="pagehead">
-    <div>
-      <h1>Runs</h1>
-      <p class="sub">Every package that was executed in a sandbox, with the evidence behind it.</p>
-    </div>
-    <button class="primary" id="new-run">New run</button>
-  </div>
-
-  <section class="hero" id="hero" hidden>
-    <div class="hero-top">
-      <span class="badge" id="hero-risk">—</span>
-      <div class="hero-title">
-        <h2 id="hero-pkg">—</h2>
-        <p id="hero-sub" class="hero-sub"></p>
-      </div>
-      <div class="hero-meta">
-        <span class="chip" id="hero-model"></span>
-        <span class="muted" id="hero-duration"></span>
-        <a class="hero-link" id="hero-open" href="#">Open full report →</a>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <span class="mark"></span>
+      <div>
+        <strong>Agent Rush</strong>
+        <small>Acme Corp.</small>
       </div>
     </div>
-    <ul class="hero-findings" id="hero-findings"></ul>
-  </section>
 
-  <section class="stats">
-    <div class="stat"><span class="k">Runs today</span><strong id="stat-runs">—</strong></div>
-    <div class="stat"><span class="k">Blocked</span><strong id="stat-blocked" class="danger">—</strong></div>
-    <div class="stat"><span class="k">Median run</span><strong id="stat-duration">—</strong></div>
-    <div class="stat"><span class="k">Runtimes</span><strong id="stat-runtimes">python · npm</strong></div>
-  </section>
+    <button class="newrun" id="new-run">New run</button>
 
-  <section class="panel wide" id="history">
-    <h2>Recent runs <span class="tag" id="history-count"></span></h2>
-    <ul class="history" id="history-list"><li class="empty">loading…</li></ul>
-  </section>
+    <div class="rail-label">Recent runs</div>
+    <ul class="rail" id="run-list"></ul>
 
-  <h2 class="section">Triage</h2>
-  <div class="grid">
-    <section class="panel" id="task">
-      <label for="pkg">Package</label>
-      <input id="pkg" value="fixtures/harborline-2.9.1.tar.gz" spellcheck="false">
-      <label for="q">Question</label>
-      <textarea id="q" rows="2">Is this safe to install on a developer machine?</textarea>
-      <label class="row">
-        <input type="checkbox" id="proxy" checked>
-        <span>egress through the deny proxy (shows the attempted host)</span>
-      </label>
-      <button class="primary" id="run">Run triage</button>
-      <p class="note" id="note"></p>
-    </section>
-
-    <section class="panel" id="plan">
-      <h2>Plan <span class="tag" id="plan-source"></span></h2>
-      <div class="chips" id="probes"></div>
-      <p class="reason" id="plan-reason">the model has not planned anything yet</p>
-    </section>
-
-    <section class="panel" id="verdict">
-      <h2>Verdict</h2>
-      <div id="risk"><span class="badge muted">no verdict</span></div>
-      <p class="summary" id="summary"></p>
-      <p class="note" id="rejected"></p>
-    </section>
-
-    <section class="panel" id="evidence">
-      <h2>Evidence</h2>
-      <ul class="evidence" id="artifacts"><li class="empty">no artifacts yet</li></ul>
-      <p class="note" id="egress"></p>
-    </section>
-
-    <section class="panel wide" id="deps-panel" hidden>
-      <h2>Dependencies <span class="tag" id="deps-count"></span></h2>
-      <div class="gauge-row">
-        <div class="gauge" id="deps-gauge">
-          <div class="gauge-track"></div>
-          <div class="gauge-zone green"></div>
-          <div class="gauge-zone amber"></div>
-          <div class="gauge-zone red"></div>
-          <div class="gauge-mark" id="deps-mark"></div>
-          <div class="gauge-threshold" title="block threshold"></div>
+    <div class="rail-foot">
+      <div class="rail-model"><span id="model-chip">…</span></div>
+      <div class="rail-actions">
+        <button class="icon-btn" id="theme-toggle" title="Switch theme">☾</button>
+        <div class="account">
+          <span class="avatar">A</span>
+          <span class="who"><strong>Alice</strong><small>Owner <em class="demo">demo</em></small></span>
         </div>
-        <div class="gauge-caption" id="deps-caption">—</div>
       </div>
-      <table class="deps" id="deps-table">
-        <thead><tr><th>Package</th><th>Version</th><th>sha256</th><th>Advisories</th><th>State</th></tr></thead>
-        <tbody></tbody>
-      </table>
-      <p class="note" id="deps-note"></p>
+    </div>
+  </aside>
+
+  <main class="main">
+    <section class="placeholder" id="placeholder">
+      <h1>Pick a run</h1>
+      <p>Every package is installed, imported and resolved inside a sandbox on Vultr. Pick a run
+        on the left, or start a new one.</p>
     </section>
 
-    <section class="panel wide" id="findings-panel">
-      <h2>Findings <span class="tag" id="finding-count"></span></h2>
-      <ul class="findings" id="findings"><li class="empty">nothing yet</li></ul>
-    </section>
+    <div id="runview" hidden>
+      <header class="runhead">
+        <div class="rh-line">
+          <span class="badge" id="risk-badge">—</span>
+          <h1 id="pkg-name">—</h1>
+          <span class="rh-meta" id="run-meta"></span>
+        </div>
+        <p class="rh-sub" id="run-question"></p>
+        <nav class="tabs" id="tabs">
+          <button class="tab active" data-tab="summary">Summary</button>
+          <button class="tab" data-tab="deps">Dependencies</button>
+          <button class="tab" data-tab="evidence">Evidence</button>
+        </nav>
+      </header>
 
-    <section class="panel wide" id="trace-panel">
-      <h2>Trace</h2>
-      <ol class="trace" id="trace-list"><li class="empty">no run yet</li></ol>
-    </section>
-  </div>
-</main>
+      <section class="pane" id="pane-summary"></section>
+      <section class="pane" id="pane-deps" hidden></section>
+      <section class="pane" id="pane-evidence" hidden></section>
+    </div>
+  </main>
+</div>
 
-<footer class="foot">
-  <span>Vultr Cloud Compute · Serverless Inference · sandboxed execution</span>
-  <span id="runid"></span>
-</footer>
+<dialog id="newrun">
+  <form method="dialog" id="run-form">
+    <h2>New run</h2>
+    <label for="pkg">Package</label>
+    <input id="pkg" value="fixtures/harborline-2.9.1.tar.gz" spellcheck="false">
+    <label for="q">Question</label>
+    <textarea id="q" rows="2">Is this safe to install on a developer machine?</textarea>
+    <label class="check"><input type="checkbox" id="proxy" checked> <span>Route egress through the deny proxy</span></label>
+    <p class="note" id="form-note"></p>
+    <div class="dialog-actions">
+      <button type="button" class="ghost" id="cancel">Cancel</button>
+      <button type="submit" class="primary" id="submit-run">Run triage</button>
+    </div>
+  </form>
+</dialog>
 
-<script src="app.js?v=12"></script>
+<script src="app.js?v=22"></script>
 </body>
 </html>

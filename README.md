@@ -33,36 +33,14 @@ See [`docs/provenance.md`](docs/provenance.md) for the file-by-file record of wh
 before the event and what was built during it. That distinction is a rule of this hackathon,
 so it is tracked explicitly rather than asserted.
 
-![Agent Rush: the run dashboard](docs/screenshots/demo-dashboard.png)
+![Agent Rush: one run, findings only where they matter](docs/screenshots/demo-summary.png)
 
-*The live instance: runs today, how many were blocked, the model that judged them, and the
-last runs — real records from the store. The account chip is demo data and says so.*
+![The dependency tab: gauge, hash, advisories, state](docs/screenshots/demo-deps.png)
 
-![One blocked run: verdict first](docs/screenshots/demo-blocked.png)
-
-*Opening a run puts the verdict at the top: risk, the model that produced it, duration, and
-the three findings worth reading. Below it the dependency panel: a gauge from green to red
-with the block threshold marked, and one row per artifact with its hash, advisory count and
-state. Same run, three versions of one package — `2.8.0` and `2.9.0` build clean, `2.9.1`
-pins `urllib3 1.24.1` and is blocked.*
-
-![The same run further down: findings with their source, including the injection finding](docs/screenshots/ui-injection.png)
-
-*The finding list names the source of every claim. The injection attempt appears as its
-own finding, because the rule layer flagged it before the model saw it.*
-
-**2026-11-05 · the payload that waits**
-
-`sample_pkg_lazy` has a clean build hook and a hostile module body. It is the common real
-evasion, and the reason there are two passes.
-
-| Phase | Observed |
-|---|---|
-| build | nothing. No probe output, no proxy denials, `pip_exit: 0` |
-| import | 4 attempts: egress denied, write denied, decoy key denied, detached child **spawned** |
-| verdict | `high`, citing `import_pass` — "quiet while building and hostile when imported" |
-
-A single-pass tool calls this package clean.
+*The live instance. One run as a document: risk, the model that judged it, the findings that
+matter (informational notes folded away), and a dependency tab with a gauge against the block
+threshold plus one row per artifact — version, hash, advisory count, state. The account chip
+is demo data and says so.*
 
 ## Verified runs
 
