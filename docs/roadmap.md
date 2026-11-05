@@ -46,6 +46,14 @@ Why it matters: it turns "we use an LLM" into "we do not trust one LLM". Measure
 that the models disagree already exists — in a four-model comparison on the same payload,
 three said `low` and one said `medium`.
 
+## Candidate: a real self-healing loop
+
+The challenge brief names a *Self-Healing Runner* as an example: run code, read the errors,
+patch and retry, with the loop visible. Today this project retries exactly one thing — a
+timeout — and the model only chooses probes, it does not patch anything. A fuller version
+would feed the failure back, let the model rewrite the inspection script, and show both
+attempts side by side. That is the honest gap between what exists and that example.
+
 ## Candidate: parallel branches for ecosystems
 
 Adding Cargo, NuGet or Go is mostly mechanical and parallelises well: one branch per adapter,
