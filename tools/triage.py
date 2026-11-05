@@ -10,6 +10,7 @@ Nothing here is a workflow file; it is the thing a workflow would call.
 
 import argparse
 import json
+import os
 import sys
 import time
 import urllib.error
@@ -18,15 +19,23 @@ import urllib.request
 RISK_ORDER = {"none": -1, "low": 0, "medium": 1, "high": 2}
 
 
-def post(base, path, payload):
+def _headers(token=""):
+    headers = {"Content-Type": "application/json"}
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    return headers
+
+
+def post(base, path, payload, token=""):
     req = urllib.request.Request(base + path, data=json.dumps(payload).encode(),
-                                 headers={"Content-Type": "application/json"}, method="POST")
+                                 headers=_headers(token), method="POST")
     with urllib.request.urlopen(req, timeout=30) as resp:
         return json.load(resp)
 
 
-def get(base, path):
-    with urllib.request.urlopen(base + path, timeout=30) as resp:
+def get(base, path, token=""):
+    req = urllib.request.Request(base + path, headers=_headers(token))
+    with urllib.request.urlopen(req, timeout=30) as resp:
         return json.load(resp)
 
 
@@ -40,6 +49,9 @@ def main() -> int:
     ap.add_argument("--egress-mode", default="proxy", choices=["none", "proxy"])
     ap.add_argument("--json", action="store_true", help="print the raw report")
     ap.add_argument("--timeout", type=int, default=900)
+    ap.add_argument("--token", default=os.environ.get("AGENT_RUSH_TOKEN", ""),
+                    help="bearer token, if the instance sets AR_API_TOKEN "
+                         "(default: $AGENT_RUSH_TOKEN)")
     args = ap.parse_args()
 
     try:
@@ -48,7 +60,7 @@ def main() -> int:
             "question": args.question,
             "egress_mode": args.egress_mode,
             "fail_on": args.fail_on,
-        })
+        }, token=args.token)
     except (urllib.error.URLError, urllib.error.HTTPError) as exc:
         print(f"request failed: {exc}", file=sys.stderr)
         return 2
@@ -57,12 +69,12 @@ def main() -> int:
     deadline = time.time() + args.timeout
     record = {}
     while time.time() < deadline:
-        record = get(args.base, f"/batches/{batch_id}")
+        record = get(args.base, f"/batches/{batch_id}", token=args.token)
         if record.get("state") in ("done", "failed"):
             break
         time.sleep(2)
 
-    report = get(args.base, f"/batches/{batch_id}/report")
+    report = get(args.base, f"/batches/{batch_id}/report", token=args.token)
     if args.json:
         print(json.dumps(report, indent=2))
     else:

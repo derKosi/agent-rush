@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agent-rush-triage"
+version = "0.1.0"
+description = "Triage an untrusted package before it reaches a machine with credentials"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+dependencies = []
+
+[project.scripts]
+triage = "tools.triage:main"
+
+[tool.setuptools]
+packages = ["tools"]

@@ -171,6 +171,34 @@ else's runner.
 
 `deploy/cloud-init.yaml` is VM bootstrap, not CI. GitHub never executes it.
 
+## What it checks, and what it does not
+
+Being precise about this is the difference between a security tool and a security theatre
+prop.
+
+| | |
+|---|---|
+| **Artifact** | Python **sdist** — a `.tar.gz` containing `setup.py` |
+| **Phase 1** | `pip install` runs the build hook, with the probes the planner chose |
+| **Phase 2** | the installed distribution is imported, top-level modules only |
+| **Evidence** | egress attempts (proxy log), filesystem diff, process result, spawns |
+| **Dependencies** | **not installed and not checked** — `--no-deps` |
+| **After import** | not observed. A payload that waits for a request handler is out of scope |
+| **Dead code** | not analysed. Paths that never execute are never seen |
+
+Other ecosystems have the same shape and need their own adapter — not shipped:
+
+| Ecosystem | Build-time hook | Would need |
+|---|---|---|
+| npm | `postinstall` scripts | `npm install` + `require()` pass |
+| Cargo | `build.rs` | `cargo build` + link a test binary |
+| NuGet | MSBuild targets | `dotnet restore` + a load pass |
+| Go | none by default | `go build` + `init()` at first use |
+
+The dependency gap matters most: most real supply-chain attacks arrive through a
+transitive dependency, not the package you named. Testing one artifact in isolation is a
+gate in front of an install, not a replacement for a resolver you trust.
+
 ## Architecture
 
 ```
