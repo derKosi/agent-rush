@@ -6,6 +6,13 @@ gelesen hast. Er darf alles, was du darfst. Zum Beispiel deine Schlüssel lesen.
 Ich habe sechs Tage an einem Werkzeug gebaut, das das prüft. Es schaut sich ein Paket an,
 bevor es auf deinen Rechner kommt.
 
+
+![Der Lauf im Browser: Plan, Verdict mit Injection-Badge, Findings mit Quelle](images/ui-run.png)
+
+![Die Findings darunter — jede Zeile nennt ihre Quelle](images/ui-injection.png)
+
+![Architektur: ein Task, drei Ausführungsphasen, drei Beweisquellen](images/architecture.svg)
+
 ## So funktioniert es
 
 Du gibst ihm ein Paket und eine Frage. Dann kommt ein Ablauf.

@@ -9,6 +9,13 @@ Für den Vultr Agent Rush Hackathon habe ich sechs Tage lang an einer Gegenmaßn
 Herausgekommen ist ein Werkzeug, das ein Paket prüft, bevor es auf eine Maschine kommt, auf
 der Schlüssel liegen.
 
+
+![Der Lauf im Browser: Plan, Verdict mit Injection-Badge, Findings mit Quelle](images/ui-run.png)
+
+![Die Findings darunter — jede Zeile nennt ihre Quelle](images/ui-injection.png)
+
+![Architektur: ein Task, drei Ausführungsphasen, drei Beweisquellen](images/architecture.svg)
+
 ## Was es tut
 
 Man gibt ihm ein Paket und eine Frage. Dann passieren vier Dinge.

@@ -101,7 +101,7 @@ def main():
     # 3 — the loop
     s = blank(prs)
     label(s, "What it does")
-    text(s, 838200, 1000000, 10000000, 500000, "Plan · Execute · Observe · Verdict", size=34, bold=True)
+    text(s, 838200, 1000000, 10000000, 500000, "Plan · Build · Import · Resolve · Verdict", size=30, bold=True)
     steps = [
         ("1  Plan", "The model reads a static profile — file list, setup.py, network and\n"
                     "subprocess references — without executing anything, and picks which\n"

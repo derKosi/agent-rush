@@ -8,6 +8,13 @@ scale.
 I spent six days building the countermeasure for the Vultr Agent Rush hackathon. The result is a
 tool that checks a package before it reaches a machine where keys live.
 
+
+![The run in the browser: plan, verdict with the injection badge, findings with sources](images/ui-run.png)
+
+![The findings below — every line names its source](images/ui-injection.png)
+
+![Architecture: one task, three execution phases, three evidence sources](images/architecture.svg)
+
 ## What it does
 
 You give it a package and a question. Four things happen.

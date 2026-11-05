@@ -5,6 +5,13 @@ everything you can do. For example, it can read your keys.
 
 I built a tool that checks a package first. I built it in six days for a hackathon.
 
+
+![The run in the browser: plan, verdict with the injection badge, findings with sources](images/ui-run.png)
+
+![The findings below — every line names its source](images/ui-injection.png)
+
+![Architecture: one task, three execution phases, three evidence sources](images/architecture.svg)
+
 ## How it works
 
 You give it a package and a question. Then four steps happen.

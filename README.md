@@ -38,6 +38,11 @@ so it is tracked explicitly rather than asserted.
 *A real run on the Vultr VM: the plan the model chose, the verdict with the injection
 badge, and the evidence behind it.*
 
+![The same run further down: findings with their source, including the injection finding](docs/screenshots/ui-injection.png)
+
+*The finding list names the source of every claim. The injection attempt appears as its
+own finding, because the rule layer flagged it before the model saw it.*
+
 **2026-11-05 · the payload that waits**
 
 `sample_pkg_lazy` has a clean build hook and a hostile module body. It is the common real
@@ -162,6 +167,27 @@ FAILED
 
 Example workflow step and the JSON shape: [`docs/ci.md`](docs/ci.md).
 
+## Testing
+
+82 tests, 1190 lines against 2053 lines of product code. Most of them run without Docker.
+
+| Area | Covered by | What that means |
+|---|---|---|
+| Verdict rules + grounding | 21 tests | risk floor, citation validation, withheld summaries, injection detection |
+| Planner + script audit | 16 tests | probe selection, mandatory floor, AST refusal of dangerous generated code |
+| Sandbox wrapper | 7 tests | artifact collection, proxy log, cleanup — against a stub runner |
+| Dependencies + runtime | 11 tests | PKG-INFO parsing, runtime detection from archive contents |
+| Guard, recovery, batch, API | 27 tests | rate limits, retry rules, batch report, endpoint contracts |
+
+What is **not** covered automatically, and why:
+
+- **The container phases themselves.** `sandbox/run.sh` and the three entrypoint modes are
+  verified by running them, and every result in this README comes from such a run. They are
+  not in the test suite because a suite that needs Docker is a suite that gets skipped.
+- **The npm require pass.** Verified manually on the VM, not asserted in a test.
+- **Nothing under load.** The guard has a concurrency cap of one; it has never been tested
+  with two real clients hammering it.
+
 ## No CI, by decision
 
 This repository has **no GitHub Actions workflows**, and that is on purpose. Nothing runs on
@@ -203,30 +229,11 @@ not built.
 
 ## Architecture
 
-```
-                 ┌──────────────────────────────────────────┐
-   browser ─────▶│  Web app (FastAPI + static UI)  :8080    │
-                 │  task input · live trace · artifacts     │
-                 └───────────────┬──────────────────────────┘
-                                 │
-                 ┌───────────────▼──────────────────────────┐
-                 │  Orchestrator                            │
-                 │  plan → dispatch → execute → observe →   │
-                 │  verdict, with timeout and retry         │
-                 └───────┬───────────────────────┬──────────┘
-                         │                       │
-        ┌────────────────▼─────────┐   ┌─────────▼─────────────────────┐
-        │ Vultr Serverless         │   │ Sandbox runner (Docker)        │
-        │ Inference                │   │ network:none · read-only root  │
-        │ api.vultrinference.com   │   │ non-root · pids/mem/cpu caps   │
-        └──────────────────────────┘   │ tmpfs /tmp · cap-drop ALL      │
-                                       └─────────┬─────────────────────┘
-                                                 │ attempts leave the box
-                                       ┌─────────▼─────────────────────┐
-                                       │ Egress proxy, deny by default │
-                                       │ logs every attempt as JSONL   │
-                                       └───────────────────────────────┘
-```
+![Architecture: one task, three execution phases, three evidence sources](docs/architecture.svg)
+
+The model plans, an inspection script runs, and three phases execute in the same hardened
+container: build, import, resolve. Evidence is written outside the sandbox, so the report
+cannot be forged by the thing it reports on.
 
 Full detail, threat model and the containment invariants: [`docs/architecture.md`](docs/architecture.md).
 
