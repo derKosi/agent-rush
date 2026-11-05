@@ -181,6 +181,40 @@ def test_build_log_is_a_valid_citation():
     assert len(accepted) == 1 and not rejected, (accepted, rejected)
 
 
+def test_summary_contradicting_the_risk_is_withheld():
+    ev = _evidence(exec_={"pip_exit": 0},
+                   egress={"collected": True, "denied": 2, "denied_hosts": ["collector.invalid"]})
+
+    def liar(messages, model=None):
+        return json.dumps({"risk": "high", "summary": "This package is safe and harmless.",
+                           "findings": [{"claim": "egress blocked", "source": "egress.jsonl"}]})
+
+    v = verdict(ev, chat=liar)
+    assert v["risk"] == "high"
+    assert v["summary"] is None, v["summary"]
+    assert v.get("withheld_summary"), v
+    assert any("contradicted" in n for n in v["notes"]), v["notes"]
+
+
+def test_negated_summary_is_not_flagged():
+    ev = _evidence(exec_={"pip_exit": 0},
+                   egress={"collected": True, "denied": 2, "denied_hosts": ["x"]})
+
+    def honest(messages, model=None):
+        return json.dumps({"risk": "high", "summary": "This package is not safe to install.",
+                           "findings": [{"claim": "egress blocked", "source": "egress.jsonl"}]})
+
+    v = verdict(ev, chat=honest)
+    assert v["summary"] == "This package is not safe to install."
+
+
+def test_large_work_dir_is_a_finding():
+    ev = _evidence(exec_={"pip_exit": 0}, fsdiff={"changed": 0})
+    ev["work_bytes"] = 300 * 1024 * 1024
+    claims = " ".join(f["claim"] for f in rule_findings(ev))
+    assert "300 MB" in claims, claims
+
+
 def test_refs_do_not_leak_paths():
     refs = evidence_refs(_evidence(exec_={"pip_exit": 0}))
     assert all("/" not in r for r in refs), refs
@@ -204,6 +238,10 @@ def main() -> int:
     check("injection becomes a finding", test_injection_in_build_log_is_a_finding)
     check("obedient model cannot lower risk", test_model_obeying_the_injection_cannot_lower_the_risk)
     check("build log is citable", test_build_log_is_a_valid_citation)
+    print("model prose")
+    check("contradicting summary withheld", test_summary_contradicting_the_risk_is_withheld)
+    check("negation is not a contradiction", test_negated_summary_is_not_flagged)
+    check("large work dir is a finding", test_large_work_dir_is_a_finding)
     print("refs")
     check("refs are not paths", test_refs_do_not_leak_paths)
 

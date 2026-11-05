@@ -20,6 +20,11 @@ PROBES = {
 }
 ALL_PROBES = tuple(PROBES)
 
+# The model may add probes; it may not remove these. Without a floor, a package that
+# talks the model out of running the egress probe also removes the evidence that would
+# have caught it -- the plan step would become an injection surface with consequences.
+MANDATORY_PROBES = ("egress", "write_outside")
+
 PLANNER_PROMPT = """You plan a sandbox triage run for an untrusted Python package.
 
 You get a static description of the package. You do not execute anything.
@@ -89,7 +94,8 @@ def plan(package_path, question=None, chat=None, model=None):
     """Return {"probes": [...], "reason": str, "source": "model"|"default"}."""
     profile = static_profile(package_path)
     fallback = {"probes": list(ALL_PROBES), "reason": "no model configured; running every probe",
-                "source": "default", "rejected": [], "profile": profile}
+                "source": "default", "rejected": [], "profile": profile,
+                "mandatory": list(MANDATORY_PROBES)}
     if chat is None:
         return fallback
 
@@ -118,8 +124,11 @@ def plan(package_path, question=None, chat=None, model=None):
         fallback["rejected"] = rejected
         return fallback
 
+    final = [p for p in MANDATORY_PROBES] + [p for p in chosen if p not in MANDATORY_PROBES]
     return {
-        "probes": chosen,
+        "probes": final,
+        "from_model": chosen,
+        "mandatory": list(MANDATORY_PROBES),
         "reason": str(parsed.get("reason") or "").strip()[:500],
         "source": "model",
         "rejected": rejected,

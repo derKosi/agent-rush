@@ -84,6 +84,16 @@ def collect_evidence(run_dir, result, package_path=None) -> dict:
 
     excerpt = _source_excerpt(package_path) if package_path else ""
 
+    work_bytes = 0
+    work_dir = Path(run_dir) / "work"
+    if work_dir.is_dir():
+        for path in work_dir.rglob("*"):
+            try:
+                if path.is_file():
+                    work_bytes += path.stat().st_size
+            except OSError:
+                continue
+
     collected = result.get("artifacts") or {}
     # Anything else in the artifacts dir (script.log, script.py from the inspection
     # pass) belongs in the evidence too. Listing the directory beats guessing names.
@@ -94,6 +104,7 @@ def collect_evidence(run_dir, result, package_path=None) -> dict:
             collected[path.name] = {"bytes": path.stat().st_size, "sha256": digest}
 
     return {
+        "work_bytes": work_bytes,
         "build_log_tail": log_tail,
         "package_source_excerpt": excerpt,
         "exec": _read_json(art / "exec.json"),

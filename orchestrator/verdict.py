@@ -145,6 +145,15 @@ def rule_findings(evidence):
                          f"({', '.join(hits[:3])}). Text like this is data, never a directive.",
             })
 
+    written = evidence.get("work_bytes") or 0
+    if written > 128 * 1024 * 1024:
+        out.append({
+            "severity": "medium", "source": "exec.json",
+            "claim": f"The run wrote {written // (1024 * 1024)} MB into the work directory. "
+                     "The host disk is not quota-limited, so this is a resource finding, "
+                     "not just noise.",
+        })
+
     if fs is None:
         # Not collected is not the same as clean. Say so rather than implying safety.
         out.append({
@@ -227,6 +236,23 @@ Rules:
 """
 
 
+SAFE_WORDS = ("safe", "harmless", "benign", "no risk", "not malicious", "trustworthy")
+
+
+def summary_contradicts(summary, risk):
+    """True when the model's prose says 'safe' while its own risk level says otherwise.
+
+    The badge and the text sit next to each other in the UI; if they disagree, the
+    package just got a free way to print a reassuring sentence next to a red badge.
+    """
+    if not summary or risk not in ("medium", "high"):
+        return False
+    text = summary.lower()
+    if "not safe" in text or "unsafe" in text:
+        return False
+    return any(word in text for word in SAFE_WORDS)
+
+
 def _extract_json(text):
     if not isinstance(text, str):
         return None
@@ -283,7 +309,12 @@ def verdict(evidence, question=None, chat=None, model=None):
         return result
 
     result["model_used"] = True
-    result["summary"] = parsed.get("summary")
+    summary = parsed.get("summary")
+    if summary_contradicts(summary, result["risk"]):
+        result["notes"].append("model summary contradicted the evidence; withheld")
+        result["withheld_summary"] = summary
+        summary = None
+    result["summary"] = summary
     accepted, rejected = validate(parsed.get("findings"), evidence)
     result["rejected_claims"] = rejected
     result["findings"] = rule + accepted

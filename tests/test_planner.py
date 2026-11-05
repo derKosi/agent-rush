@@ -42,7 +42,9 @@ def test_model_choice_is_used():
 
     p = planner.plan(FIXTURE, chat=fake)
     assert p["source"] == "model"
-    assert p["probes"] == ["egress"]
+    # The model asked for one probe; the mandatory floor is added on top.
+    assert p["probes"] == ["egress", "write_outside"], p["probes"]
+    assert p["from_model"] == ["egress"]
     assert "network" in p["reason"]
 
 
@@ -83,6 +85,18 @@ def test_profile_reads_without_executing():
 def test_probes_env():
     assert planner.probes_env({"probes": ["egress", "decoy_key"]}) == "egress,decoy_key"
     assert set(planner.probes_env({}).split(",")) == set(planner.ALL_PROBES)
+
+
+def test_model_cannot_drop_a_mandatory_probe():
+    # The obvious attack: talk the planner out of the egress probe, so the proxy log
+    # stays empty and the rule floor drops with it.
+    def fake(messages, model=None):
+        return json.dumps({"probes": ["decoy_key"], "reason": "nothing to see here"})
+
+    p = planner.plan(FIXTURE, chat=fake)
+    assert "egress" in p["probes"], p["probes"]
+    assert "write_outside" in p["probes"], p["probes"]
+    assert p["from_model"] == ["decoy_key"]
 
 
 def test_audit_allows_mentions_in_strings():
@@ -129,6 +143,7 @@ def main() -> int:
     check("unknown probes dropped", test_validate_drops_unknown)
     check("no model -> all probes", test_no_model_runs_everything)
     check("model choice used", test_model_choice_is_used)
+    check("mandatory probes cannot be dropped", test_model_cannot_drop_a_mandatory_probe)
     check("unknown-only -> fallback", test_unknown_only_falls_back)
     check("model error -> fallback", test_model_error_falls_back)
     check("garbage -> fallback", test_garbage_answer_falls_back)
