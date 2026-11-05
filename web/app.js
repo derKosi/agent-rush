@@ -55,10 +55,35 @@ function renderVerdict(v) {
     risk.appendChild(m);
   }
   $('summary').textContent = v.summary || '';
+
   const rejected = v.rejected_claims || [];
-  $('rejected').textContent = rejected.length
-    ? `${rejected.length} model claim(s) rejected — cited a source that is not in the evidence`
-    : (v.notes || []).join(' · ');
+  const box = $('rejected');
+  box.innerHTML = '';
+  if (rejected.length) {
+    const head = document.createElement('div');
+    head.className = 'veto-head';
+    head.textContent = `veto: ${rejected.length} model claim(s) dropped`;
+    box.appendChild(head);
+    for (const r of rejected) {
+      const row = document.createElement('div');
+      row.className = 'veto-row';
+      row.textContent = `“${r.claim}” — cited ${r.source}, which is not in this run`;
+      box.appendChild(row);
+    }
+  } else {
+    box.textContent = (v.notes || []).join(' · ');
+  }
+
+  // A hostile package that talks to the reader is worth a badge, not a footnote.
+  const injected = (v.findings || []).some(
+    (f) => (f.source === 'package_source_excerpt' || f.source === 'build_log_tail')
+           && /instructions|directive/i.test(f.claim || ''));
+  if (injected) {
+    const badge = document.createElement('span');
+    badge.className = 'tag warn';
+    badge.textContent = 'injection detected';
+    risk.appendChild(badge);
+  }
 }
 
 function renderFindings(v) {

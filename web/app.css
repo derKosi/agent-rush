@@ -210,3 +210,20 @@ button:disabled {
 .evidence a { color: var(--accent); text-decoration: none; }
 .evidence a:hover { text-decoration: underline; }
 #runid { font: 11px var(--mono); }
+
+.veto-head {
+  margin-top: 10px;
+  font: 11.5px var(--mono);
+  color: var(--danger);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+.veto-row {
+  font: 12px var(--mono);
+  color: #d9a3a0;
+  border-left: 2px solid var(--danger);
+  padding: 3px 8px;
+  margin-top: 4px;
+  line-height: 1.5;
+}
+.tag.warn { color: var(--danger); border-color: #4a2a2c; }
