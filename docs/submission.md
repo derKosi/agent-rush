@@ -33,10 +33,13 @@ You give it a package and a question. Then:
    no network, a non-root user, and caps on memory, processes and time.
 3. **Import** — the package is installed and then imported, because a payload that waits
    for first use never appears in a build log. Same container, same probes, same limits.
-4. **Observe** — three sources are collected, none of which the sandboxed process controls:
+4. **Resolve** — reads the declared dependencies from `PKG-INFO` and fetches the tree as
+   wheels, hashed and listed, in a separate container. Wheels only, so no build backend of
+   a dependency ever executes.
+5. **Observe** — three sources are collected, none of which the sandboxed process controls:
    the egress proxy log (what was attempted, and the decision), the process result, and a
    filesystem diff.
-5. **Verdict** — rules first, model second. Every model claim must cite a source that exists in
+6. **Verdict** — rules first, model second. Every model claim must cite a source that exists in
    *this* run; a claim citing anything else is rejected and cannot raise the risk level.
 
 ### Why the evidence model matters
@@ -94,7 +97,7 @@ one verified containment moment recorded in the README with the exact observatio
 
 ## Numbers for the form
 
-- 71 tests, most of them runnable without Docker
-- 4 fixtures: honest probe, prompt-injected, broken build, hostile-at-import
+- 78 tests, most of them runnable without Docker
+- 5 fixtures: honest, prompt-injected, broken, hostile-at-import, with dependencies
 - 12 slides, 1920×1080 cover
 - Public instance: `vc2-1c-2gb`, Frankfurt, ~$0.014/h

@@ -164,6 +164,21 @@ def rule_findings(evidence):
                      + "; ".join(str(a) for a in ip_attempts)[:300],
         })
 
+    dep = evidence.get("dependencies") or {}
+    if dep.get("resolved"):
+        out.append({
+            "severity": "info", "source": "dependencies",
+            "claim": f"{len(dep['resolved'])} declared dependency file(s) were fetched and "
+                     f"hashed but not executed: "
+                     + ", ".join(d["file"] for d in dep["resolved"][:5]),
+        })
+    elif dep.get("declared") and not dep.get("resolved"):
+        out.append({
+            "severity": "medium", "source": "dependencies",
+            "claim": f"The package declares {len(dep['declared'])} dependency(ies) that could "
+                     "not be fetched, so nothing is known about them.",
+        })
+
     if fs is None:
         # Not collected is not the same as clean. Say so rather than implying safety.
         out.append({
@@ -201,6 +216,8 @@ def evidence_refs(evidence):
         refs.add("inspection")
     if evidence.get("import_pass"):
         refs.add("import_pass")
+    if evidence.get("dependencies"):
+        refs.add("dependencies")
     if (evidence.get("egress") or {}).get("collected"):
         refs.add("egress.jsonl")
     if evidence.get("fsdiff") is not None:
@@ -238,6 +255,7 @@ You get JSON evidence only. You did not see the package and you must not specula
 Rules:
 - Every finding needs a "source" that is EXACTLY one of these: {refs}
 - "inspection" is the output of a script the planner wrote, run inside the sandbox
+- "dependencies" is the fetched (not executed) dependency manifest
 - "import_pass" is what happened when the installed package was imported. A package can
   be clean at build time and hostile at first use; treat a quiet build as evidence about
   the build only

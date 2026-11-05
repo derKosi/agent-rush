@@ -44,6 +44,35 @@ EOF
   exit 0
 fi
 
+# Mode "resolve": make the dependency tree visible without running any of it.
+# Network is on here and only here; pip is told to accept wheels only, because
+# resolving an sdist runs its build backend -- which is the thing we are trying to
+# avoid. Nothing from the package is imported in this phase.
+if [ "${AR_MODE:-pip}" = "resolve" ]; then
+  set +e
+  if [ -s /work/reqs.txt ]; then
+    pip download --only-binary=:all: --no-cache-dir --disable-pip-version-check \
+      --dest /work/out/deps --requirement /work/reqs.txt > /work/out/resolve.log 2>&1
+    RESOLVE_EXIT=$?
+  else
+    echo "no declared dependencies" > /work/out/resolve.log
+    RESOLVE_EXIT=0
+  fi
+  set -e
+  cat /work/out/resolve.log
+
+  cat > /work/out/exec.json <<EOF
+{
+  "started": "$STARTED",
+  "finished": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+  "duration_s": $(( $(date +%s) - T0 )),
+  "mode": "resolve",
+  "resolve_exit": $RESOLVE_EXIT
+}
+EOF
+  exit 0
+fi
+
 # Mode "script": run a short Python inspection script written by the model. Same
 # sandbox, same limits -- model-authored code is still untrusted code.
 if [ "${AR_MODE:-pip}" = "script" ]; then

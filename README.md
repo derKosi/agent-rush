@@ -182,7 +182,7 @@ prop.
 | **Phase 1** | `pip install` runs the build hook, with the probes the planner chose |
 | **Phase 2** | the installed distribution is imported, top-level modules only |
 | **Evidence** | egress attempts (proxy log), filesystem diff, process result, spawns |
-| **Dependencies** | **not installed and not checked** — `--no-deps` |
+| **Dependencies** | declared ones are fetched as **wheels**, hashed and listed — **never executed** (`--only-binary=:all:`) |
 | **After import** | not observed. A payload that waits for a request handler is out of scope |
 | **Dead code** | not analysed. Paths that never execute are never seen |
 
@@ -195,9 +195,11 @@ Other ecosystems have the same shape and need their own adapter — not shipped:
 | NuGet | MSBuild targets | `dotnet restore` + a load pass |
 | Go | none by default | `go build` + `init()` at first use |
 
-The dependency gap matters most: most real supply-chain attacks arrive through a
-transitive dependency, not the package you named. Testing one artifact in isolation is a
-gate in front of an install, not a replacement for a resolver you trust.
+Dependencies are now *visible* but not *judged*: the tree is fetched as wheels and hashed,
+so you can see what a package would pull in and diff it between releases. Those wheels are
+not installed and their code never runs, which means a malicious dependency is listed, not
+caught. Closing that would mean running each wheel through the same two phases — feasible,
+not built.
 
 ## Architecture
 

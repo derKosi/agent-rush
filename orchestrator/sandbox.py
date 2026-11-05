@@ -207,3 +207,57 @@ def run_import(package_path, run_dir, *, task_id, timeout_s=120, probes="") -> d
 
     return {"exit_code": rc, "duration_s": duration, "stderr_tail": (err or "")[-500:],
             "log_tail": log_tail, "work": work}
+
+
+def run_resolve(package_path, run_dir, requirements, *, task_id, timeout_s=180) -> dict:
+    """Fetch the dependency tree as wheels, hash it, execute none of it.
+
+    This is the only phase with network access, and it is a different container with a
+    different job. `--only-binary=:all:` is deliberate: resolving an sdist runs its build
+    backend, which would execute exactly the code we are trying not to run.
+    """
+    package_path = Path(package_path).resolve()
+    run_dir = Path(run_dir).resolve()
+    work = run_dir / "work-resolve"
+    artifacts_dir = run_dir / "artifacts"
+    work.mkdir(parents=True, exist_ok=True)
+    artifacts_dir.mkdir(parents=True, exist_ok=True)
+    (work / "reqs.txt").write_text("\n".join(requirements) + "\n", encoding="utf-8")
+
+    env = os.environ.copy()
+    env.update({
+        "AR_WORKDIR": str(work),
+        "AR_TASK_ID": task_id,
+        "AR_MODE": "resolve",
+        "AR_NET": "bridge",
+        "AR_EGRESS_MODE": "none",
+        "AR_ALLOW": "",
+        "AR_TIMEOUT_S": str(timeout_s),
+        "AR_PROBES": "",
+    })
+
+    started = time.time()
+    try:
+        proc = subprocess.run(["bash", str(RUNNER), str(package_path), task_id],
+                              env=env, capture_output=True, text=True, timeout=timeout_s + 60)
+        rc, err = proc.returncode, proc.stderr
+    except subprocess.TimeoutExpired:
+        rc, err = -1, "timeout"
+    duration = round(time.time() - started, 2)
+
+    deps_dir = work / "out" / "deps"
+    resolved = []
+    if deps_dir.is_dir():
+        for item in sorted(deps_dir.iterdir()):
+            if item.is_file():
+                resolved.append({"file": item.name, "bytes": item.stat().st_size,
+                                 "sha256": _sha256(item)})
+
+    log_path = work / "out" / "resolve.log"
+    log_tail = log_path.read_text(encoding="utf-8", errors="replace")[-2000:] if log_path.is_file() else ""
+
+    manifest = {"declared": list(requirements), "resolved": resolved, "exit_code": rc}
+    (artifacts_dir / "dependencies.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+
+    return {"exit_code": rc, "duration_s": duration, "resolved": resolved,
+            "log_tail": log_tail, "stderr_tail": (err or "")[-500:]}

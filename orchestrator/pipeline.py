@@ -11,6 +11,7 @@ import os
 import time
 from pathlib import Path
 
+from . import deps as deps_mod
 from . import planner
 from . import recovery
 from . import sandbox
@@ -217,6 +218,26 @@ def execute(store, run_id, package_path, question=None, *, egress_mode="none",
             }
         except Exception as exc:  # noqa: BLE001
             evidence["import_pass"] = {"error": f"{type(exc).__name__}: {exc}"}
+
+    # Phase 3: make the dependency tree visible. Network on, package code untouched.
+    declared = deps_mod.declared_dependencies(package_path)
+    if os.environ.get("AR_DEPS_PASS", "on").lower() != "off":
+        try:
+            resolved = sandbox.run_resolve(
+                Path(package_path), store.dir_for(run_id), declared,
+                task_id=run_id, timeout_s=max(120, current_timeout),
+            )
+            evidence["dependencies"] = {
+                "declared": declared,
+                "resolved": resolved.get("resolved") or [],
+                "exit_code": resolved.get("exit_code"),
+                "duration_s": resolved.get("duration_s"),
+                "log_tail": (resolved.get("log_tail") or "")[-1200:],
+            }
+        except Exception as exc:  # noqa: BLE001
+            evidence["dependencies"] = {"declared": declared, "error": f"{type(exc).__name__}: {exc}"}
+    else:
+        evidence["dependencies"] = {"declared": declared, "resolved": [], "skipped": True}
 
     try:
         v = verdict(evidence, question=question, chat=chat, model=model)

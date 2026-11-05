@@ -34,7 +34,13 @@ mkdir -p "$WORK/out"
 cp "$PKG" "$WORK/pkg.tar.gz"
 chmod 0777 "$WORK" "$WORK/out"   # container runs as uid 10001
 
-NET_ARGS=(--network none)
+# Default: no network. The resolve phase is the single exception, and it is a
+# different container with a different job -- see docs/architecture.md.
+if [ "${AR_NET:-none}" = "bridge" ]; then
+  NET_ARGS=(--network bridge)
+else
+  NET_ARGS=(--network none)
+fi
 EXTRA_HOSTS=()
 ENV_ARGS=()
 
@@ -64,6 +70,7 @@ RUN_CMD=(docker run --rm
   # The planner's choice has to reach the process under test, or the plan is decoration.
   -e "AR_PROBES=${AR_PROBES:-}"
   -e "AR_MODE=${AR_MODE:-pip}"
+  -e "AR_NET=${AR_NET:-none}"
   --cap-drop ALL
   --security-opt no-new-privileges
   --pids-limit "$PIDS"

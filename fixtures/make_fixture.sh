@@ -131,6 +131,21 @@ EOF
 build_pkg() {
   local name="$1" version="$2" inject="$3"
   mkdir -p "$BUILD/$name-$version"
+  if [ "$inject" = "deps" ]; then
+    printf 'from setuptools import setup\n\nsetup(name="sample-pkg-deps", version="%s",\n      description="synthetic fixture with declared dependencies",\n      install_requires=["six>=1.16"], py_modules=[])\n' \
+      "$version" > "$BUILD/$name-$version/setup.py"
+    # A real sdist ships PKG-INFO. Ours has to as well, because that is where the
+    # dependency list is read from without executing anything.
+    printf 'Metadata-Version: 2.1\nName: sample-pkg-deps\nVersion: %s\nRequires-Dist: six (>=1.16)\n\nSynthetic fixture.\n' \
+      "$version" > "$BUILD/$name-$version/PKG-INFO"
+    printf 'Synthetic probe package. Not a real library. See fixtures/make_fixture.sh.\n' \
+      > "$BUILD/$name-$version/README.md"
+    COPYFILE_DISABLE=1 tar czf "$HERE/$name-$version.tar.gz" --exclude '._*' \
+      -C "$BUILD" "$name-$version"
+    echo "built: $name-$version.tar.gz"
+    return
+  fi
+
   if [ "$inject" = "lazy" ]; then
     # Clean build hook, hostile module body: the payload waits for the first import.
     printf 'from setuptools import setup\n\nsetup(name="sample-pkg-lazy", version="%s",\n      description="synthetic fixture: hostile at import time",\n      packages=["sample_pkg_lazy"])\n' \
@@ -177,3 +192,4 @@ build_pkg sample_pkg 0.1.0 no
 build_pkg sample_pkg_injected 0.1.0 yes
 build_pkg sample_pkg_broken 0.1.0 broken
 build_pkg sample_pkg_lazy 0.1.0 lazy
+build_pkg sample_pkg_deps 0.1.0 deps

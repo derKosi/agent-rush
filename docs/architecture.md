@@ -32,6 +32,21 @@ The import pass writes `import_probe.json` and `import.log`, and its egress runs
 the same deny proxy. A finding from this phase is cited as `import_pass`, so the report
 says which phase produced it.
 
+## The dependency phase, and why it has network
+
+A third phase lists what the package would pull in. `Requires-Dist` is read from
+`PKG-INFO` as plain text — no execution — and the resulting requirements are fetched with
+`pip download --only-binary=:all:` into a separate container.
+
+Two deliberate choices:
+
+- **Network on.** This is the only phase that needs it, and it is a different container
+  with a different job. Mixing it into the probe run would mean the sandbox that executes
+  hostile code also has egress.
+- **Wheels only.** Resolving an sdist runs its build backend, which would execute exactly
+  the code we are trying not to run. A dependency that only exists as an sdist is therefore
+  not resolved, and the report says so rather than silently skipping it.
+
 ## The three evidence sources
 
 Containment is claimed only where it is *recorded*. Each run produces:
