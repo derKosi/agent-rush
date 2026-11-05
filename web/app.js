@@ -18,7 +18,7 @@ function trace(message, kind) {
   li.className = kind || '';
   li.textContent = `${t}  ${message}`;
   list.appendChild(li);
-  li.scrollIntoView({ block: 'nearest' });
+  list.scrollTop = list.scrollHeight;   // scroll the list, never the page
 }
 
 function renderPlan(plan) {
@@ -215,8 +215,11 @@ const linked = new URLSearchParams(location.search).get('run');
 if (linked) {
   trace(`loading shared run ${linked}`);
   setStatus('loading', 'busy');
-  poll(linked).then(() => { timer = setInterval(() => poll(linked).catch(fail), 2000); })
-             .catch(fail);
+  poll(linked).then((run) => {
+    if (run && (run.state === 'running' || run.state === 'queued')) {
+      timer = setInterval(() => poll(linked).catch(fail), 2000);
+    }
+  }).catch(fail);
 }
 
 fetch('health').then((r) => r.json()).then((h) => {
