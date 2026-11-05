@@ -237,3 +237,24 @@ button:disabled {
 
 .trace { max-height: 300px; overflow-y: auto; }
 @media (max-width: 900px) { .trace { max-height: 220px; } }
+
+.history { list-style: none; margin: 0; padding: 0; }
+.run-row {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr) 74px 90px;
+  gap: 12px;
+  align-items: center;
+  padding: 6px 8px;
+  border-left: 2px solid var(--line);
+  margin-bottom: 3px;
+  font: 12px var(--mono);
+  cursor: pointer;
+}
+.run-row:hover { background: #0b0f14; border-left-color: var(--accent); }
+.run-row .when { color: var(--muted); }
+.run-row .pkg { overflow-wrap: anywhere; }
+.run-row .state { font-size: 11px; }
+@media (max-width: 700px) {
+  .run-row { grid-template-columns: 1fr 70px; }
+  .run-row .when, .run-row .state { display: none; }
+}

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Agent Rush — Package Triage</title>
-<link rel="stylesheet" href="app.css">
+<link rel="stylesheet" href="app.css?v=3">
 </head>
 <body>
 <header class="bar">
@@ -17,6 +17,11 @@
 </header>
 
 <main class="grid">
+  <section class="panel wide" id="history">
+    <h2>Recent runs <span class="tag" id="history-count"></span></h2>
+    <ul class="history" id="history-list"><li class="empty">loading…</li></ul>
+  </section>
+
   <section class="panel" id="task">
     <h2>Task</h2>
     <label for="pkg">Package</label>
@@ -66,6 +71,6 @@
   <span id="runid"></span>
 </footer>
 
-<script src="app.js"></script>
+<script src="app.js?v=3"></script>
 </body>
 </html>

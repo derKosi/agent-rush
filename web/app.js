@@ -227,3 +227,54 @@ fetch('health').then((r) => r.json()).then((h) => {
     $('note').textContent = 'no model configured: the verdict will be rule-based only';
   }
 }).catch(() => {});
+
+
+// --- history -------------------------------------------------------------------------
+// Real runs from the store, not a mock: this is the product's own record of what it did.
+async function loadHistory() {
+  const list = $('history-list');
+  try {
+    const res = await fetch('runs?limit=8');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const { runs } = await res.json();
+    $('history-count').textContent = runs.length ? `${runs.length}` : '';
+    list.innerHTML = '';
+    if (!runs.length) {
+      list.innerHTML = '<li class="empty">no runs yet</li>';
+      return;
+    }
+    for (const run of runs) {
+      const li = document.createElement('li');
+      li.className = 'run-row';
+
+      const when = document.createElement('span');
+      when.className = 'when';
+      when.textContent = (run.created || '').replace('T', ' ').replace('Z', '');
+
+      const pkg = document.createElement('span');
+      pkg.className = 'pkg';
+      pkg.textContent = ((run.task || {}).package || '—').split('/').pop();
+
+      const risk = document.createElement('span');
+      const level = (run.verdict || {}).risk || '—';
+      risk.className = 'badge ' + (level === 'high' ? 'high' : level === 'low' ? 'low' : 'muted');
+      risk.textContent = level;
+
+      const state = document.createElement('span');
+      state.className = 'state muted';
+      state.textContent = run.state;
+
+      li.append(when, pkg, risk, state);
+      li.addEventListener('click', () => {
+        history.replaceState(null, '', `?run=${run.id}`);
+        trace(`loading shared run ${run.id}`);
+        poll(run.id).catch(fail);
+      });
+      list.appendChild(li);
+    }
+  } catch (err) {
+    list.innerHTML = `<li class="empty">history unavailable: ${err.message}</li>`;
+  }
+}
+
+loadHistory();
