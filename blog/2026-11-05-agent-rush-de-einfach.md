@@ -54,7 +54,7 @@ sie nur nach oben korrigieren.
 
 ## Zahlen
 
-64 Tests. Drei Testpakete: ehrlich, präpariert, kaputt. Ein Lauf dauert etwa 18 Sekunden.
+96 Tests. Dreizehn Testpakete: ehrlich, präpariert, kaputt und ein paar mehr. Ein Lauf dauert etwa 14 Sekunden.
 Die Maschine kostet etwa 1,4 Cent pro Stunde.
 
 ## Was ich gelernt habe

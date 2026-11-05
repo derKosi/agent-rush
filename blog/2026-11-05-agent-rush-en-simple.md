@@ -49,8 +49,8 @@ not do anything else. The rules set the level. The model can only make it higher
 
 ## Numbers
 
-64 tests. Three test packages: one honest, one with an attack, one broken. One run takes about
-18 seconds. The server costs about 1.4 cents per hour.
+96 tests. Thirteen test packages: one honest, one with an attack, one broken, and more. One run takes about
+14 seconds. The server costs about 1.4 cents per hour.
 
 ## What I learned
 

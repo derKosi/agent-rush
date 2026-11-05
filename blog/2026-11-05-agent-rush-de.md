@@ -66,8 +66,9 @@ Ich schreibe das lieber hin, als es weglassen zu lassen.
 
 ## Zahlen
 
-64 Tests, die meisten ohne Docker lauffähig. Drei Fixtures: ehrlich, injiziert, kaputt.
-Ein Lauf dauert rund 18 Sekunden inklusive Modell. Die Instanz ist eine `vc2-1c-2gb` in
+96 Tests, die meisten ohne Docker lauffähig. Dreizehn Fixtures: ehrlich, injiziert, kaputt,
+faul beim Import, mit Abhängigkeiten, npm, und eine Produktlinie in drei Versionen.
+Ein Lauf dauert rund 14 Sekunden inklusive Modell (Median aus zehn Läufen). Die Instanz ist eine `vc2-1c-2gb` in
 Frankfurt, etwa 1,4 Cent pro Stunde. Reasoning ist pro Aufruf abgeschaltet: 2,2 Sekunden statt
 7,0 bei identischer Struktur.
 

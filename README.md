@@ -156,16 +156,15 @@ Example workflow step and the JSON shape: [`docs/ci.md`](docs/ci.md).
 
 ## Testing
 
-89 tests, 1300 lines against 2200 lines of product code. Most of them run without Docker.
+96 tests, 1383 lines of test against 2465 lines of product code. Most of them run without Docker.
 
 | Area | Covered by | What that means |
 |---|---|---|
 | Verdict rules + grounding | 21 tests | risk floor, citation validation, withheld summaries, injection detection |
 | Planner + script audit | 16 tests | probe selection, mandatory floor, AST refusal of dangerous generated code |
 | Sandbox wrapper | 7 tests | artifact collection, proxy log, cleanup — against a stub runner |
-| Dependencies + runtime | 11 tests | PKG-INFO parsing, runtime detection from archive contents |
-| Guard, recovery, batch, API | 27 tests | rate limits, retry rules, batch report, endpoint contracts |
-| Dependency reputation | 7 tests | filename parsing, alias deduplication, disabled mode, lookup failure |
+| Dependencies, runtime, reputation | 18 tests | PKG-INFO parsing, runtime detection from archive contents |
+| Guard, recovery, batch, API, SARIF | 34 tests | rate limits, retry rules, batch report, endpoint contracts |
 
 What is **not** covered automatically, and why:
 

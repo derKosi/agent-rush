@@ -63,8 +63,9 @@ I would rather write this down than leave it out.
 
 ## Numbers
 
-64 tests, most of them runnable without Docker. Three fixtures: honest, injected, broken. A run
-takes about 18 seconds including the model. The instance is a `vc2-1c-2gb` in Frankfurt, roughly
+96 tests, most of them runnable without Docker. Thirteen fixtures: honest, injected, broken,
+hostile-at-import, with dependencies, npm, and one product line in three versions. A run
+takes about 14 seconds including the model (median of ten runs). The instance is a `vc2-1c-2gb` in Frankfurt, roughly
 1.4 cents per hour. Reasoning is disabled per call: 2.2 seconds instead of 7.0 with identical
 output structure.
 
