@@ -47,7 +47,7 @@ def main() -> int:
                 print("AR_MODEL is not set -- pick one from --list", file=sys.stderr)
                 return 2
             reply = client.chat(
-                [{"role": "user", "content": args.prompt}], model=model, max_tokens=64
+                [{"role": "user", "content": args.prompt}], model=model, max_tokens=512
             )
             print(f"model: {model}")
             print(f"reply: {reply!r}")

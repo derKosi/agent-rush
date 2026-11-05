@@ -46,6 +46,20 @@ Every claim below was observed, not designed. Anything not in this table is unpr
 | verdict | `high`, rule-based, no model involved |
 | wall clock | 18 s from POST to verdict |
 
+**2026-11-05 · same host · model in the loop (`glm-5.2` via Vultr Serverless Inference)**
+
+| Signal | Observed |
+|---|---|
+| verdict | `high`, `model_used: true`, 30 s from POST |
+| model findings | 5, all citing refs that exist in this run (`egress.jsonl`, `probe.json`, `exec.json.pip_exit`) |
+| rejected claims | 0 |
+| model noticed the gap | it stated in its own summary that no filesystem diff was collected |
+
+Found while wiring the model: `glm-5.2` is a **reasoning** model, and reasoning tokens are billed
+against `max_tokens`. With a short budget it returned an empty string and `finish_reason: length`,
+which the client used to hand back as a successful answer. It now retries once with four times the
+budget and raises if the model still spends everything thinking.
+
 Two honest limitations from that run:
 
 - **A detached child process is not prevented.** `--pids-limit` caps how many processes exist,

@@ -57,21 +57,44 @@ def list_models():
     return _request("/models")
 
 
-def chat(messages, model=None, temperature=0.2, max_tokens=1024, timeout=120):
-    """One chat completion. Returns the assistant message text."""
+def chat(messages, model=None, temperature=0.2, max_tokens=4096, timeout=120):
+    """One chat completion. Returns the assistant message text.
+
+    GLM 5.2 in this catalog is a reasoning model: reasoning tokens are billed
+    against max_tokens. With a large evidence payload it can spend the whole
+    budget thinking and return "". So an empty answer with finish_reason=length
+    is retried once with four times the budget before it is treated as an error.
+    """
     model_id = model or os.environ.get("AR_MODEL", "").strip()
     if not model_id:
         raise InferenceError(
             "no model configured: set AR_MODEL to an id from list_models()"
         )
-    payload = {
-        "model": model_id,
-        "messages": messages,
-        "temperature": temperature,
-        "max_tokens": max_tokens,
-    }
-    data = _request("/chat/completions", method="POST", payload=payload, timeout=timeout)
-    try:
-        return data["choices"][0]["message"]["content"]
-    except (KeyError, IndexError, TypeError) as exc:
-        raise InferenceError(f"unexpected completion shape: {json.dumps(data)[:400]}") from exc
+
+    budget = max_tokens
+    for attempt in (1, 2):
+        payload = {
+            "model": model_id,
+            "messages": messages,
+            "temperature": temperature,
+            "max_tokens": budget,
+        }
+        data = _request("/chat/completions", method="POST", payload=payload, timeout=timeout)
+        try:
+            choice = data["choices"][0]
+            message = choice.get("message") or {}
+        except (KeyError, IndexError, TypeError) as exc:
+            raise InferenceError(f"unexpected completion shape: {json.dumps(data)[:400]}") from exc
+
+        text = message.get("content") or ""
+        if choice.get("finish_reason") != "length" or text.strip():
+            return text
+
+        used = (data.get("usage") or {}).get("completion_tokens")
+        if attempt == 2 or budget >= 16384:
+            raise InferenceError(
+                f"the model spent the entire {budget}-token budget on reasoning "
+                f"({used} completion tokens) and returned no content; raise max_tokens"
+            )
+        budget = min(budget * 4, 16384)
+    raise InferenceError("unreachable")
