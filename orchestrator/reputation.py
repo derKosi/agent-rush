@@ -34,6 +34,38 @@ def parse_artifact(filename):
     return None, None
 
 
+# Advisories label themselves inconsistently: GHSA reviewed entries carry
+# database_specific.severity, others only a CVSS vector (often v4, whose base score is a
+# different algorithm). So this maps the *label* where it exists, falls back to a coarse
+# reading of the impact metrics, and says "unknown" rather than inventing a number.
+LABEL_SCORE = {"CRITICAL": 9.5, "HIGH": 8.0, "MODERATE": 5.0, "MEDIUM": 5.0, "LOW": 2.5}
+IMPACT_WEIGHT = {"H": 3, "L": 1, "N": 0}
+
+
+def _score(vuln):
+    """(score 0-10 or None, label) for one advisory."""
+    label = ((vuln.get("database_specific") or {}).get("severity") or "").upper()
+    if label in LABEL_SCORE:
+        return LABEL_SCORE[label], label
+
+    for entry in vuln.get("severity") or []:
+        vector = str(entry.get("score") or "")
+        if not vector:
+            continue
+        parts = dict(p.split(":", 1) for p in vector.split("/")[1:] if ":" in p)
+        impact = [parts.get(k, "N") for k in ("VC", "VI", "VA", "SC", "SI", "SA")]
+        if not any(k in parts for k in ("VC", "VI", "VA")):
+            # CVSS v3 vector: only the impact trio is read here, coarsely.
+            impact = [parts.get(k, "N") for k in ("C", "I", "A")]
+        weight = max((IMPACT_WEIGHT.get(v, 0) for v in impact), default=0)
+        if weight >= 3:
+            return 8.0, "high (from impact metrics)"
+        if weight >= 1:
+            return 5.0, "medium (from impact metrics)"
+        return 2.0, "low (from impact metrics)"
+    return None, "unknown"
+
+
 def _query(url, name, version, ecosystem, timeout):
     payload = json.dumps({"package": {"name": name, "ecosystem": ecosystem},
                           "version": version}).encode()
@@ -46,10 +78,13 @@ def _query(url, name, version, ecosystem, timeout):
     data = json.loads(body)
     out = []
     for vuln in data.get("vulns") or []:
+        score, label = _score(vuln)
         out.append({
             "id": vuln.get("id"),
             "summary": (vuln.get("summary") or "")[:200],
             "aliases": (vuln.get("aliases") or [])[:4],
+            "score": score,
+            "severity": label,
         })
     return out
 
@@ -94,6 +129,8 @@ def check(resolved, *, enabled=None, url=None, timeout=8, fetch=None):
             continue
         if vulns:
             unique = dedupe(vulns)
+            scores = [v["score"] for v in unique if v.get("score") is not None]
             results.append({"package": name, "version": version,
-                            "count": len(unique), "vulns": unique[:8]})
+                            "count": len(unique), "vulns": unique[:8],
+                            "max_score": max(scores) if scores else None})
     return results

@@ -28,6 +28,32 @@ never executed; what runs after the first import is out of scope; dead code is n
 4. **Policy file** (`.triage.yml`): thresholds per repository, plus an allowlist for
    advisories the team has accepted. Without it, `--fail-on medium` is unusable in practice.
 
+## Candidate: a council of models
+
+The model is swappable already (`AR_MODEL`). Running several *at once* and taking a consensus
+is the obvious next step, and cheap: the calls are independent, so three models in parallel
+cost roughly the latency of the slowest (measured: 1.6–4.9 s each).
+
+Design worth trying:
+
+- run N models on the same evidence, in parallel
+- consensus rule: **maximum risk wins**, and disagreement is reported rather than averaged
+  (a model that says "low" while two say "high" is information, not noise to smooth away)
+- every finding still has to survive citation validation, per model
+- the report shows which model said what
+
+Why it matters: it turns "we use an LLM" into "we do not trust one LLM". Measured evidence
+that the models disagree already exists — in a four-model comparison on the same payload,
+three said `low` and one said `medium`.
+
+## Candidate: parallel branches for ecosystems
+
+Adding Cargo, NuGet or Go is mostly mechanical and parallelises well: one branch per adapter,
+each carrying an install step, an import pass and a fixture, then merged. The shared surface is
+small but real — the entrypoint, the Dockerfile and the planner's probe menu — so the branches
+will conflict there and need a serial merge. Worth doing with subagents only if the merge
+surface is frozen first.
+
 ## Later, if anyone keeps it
 
 - **More ecosystems.** Cargo (`build.rs`), NuGet (MSBuild targets), Go (`init()`). Each needs

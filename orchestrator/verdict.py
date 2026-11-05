@@ -15,6 +15,7 @@ That is the whole point of the design, and it is what the demo shows.
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 SEVERITY = {"info": 0, "low": 1, "medium": 2, "high": 3}
@@ -176,15 +177,23 @@ def rule_findings(evidence):
                      + ", ".join(d["file"] for d in dep["resolved"][:5]),
         })
     vulns = dep.get("vulnerabilities") or []
+    threshold = float(os.environ.get("AR_DEP_RISK_THRESHOLD", "7"))
+    blocking = os.environ.get("AR_DEP_BLOCK", "on").lower() != "off"
     for item in vulns:
-        if item.get("vulns"):
-            ids = ", ".join(v.get("id") for v in item["vulns"][:3])
-            out.append({
-                "severity": "medium", "source": "dependencies",
-                "claim": f"{item['package']} {item['version']} has {item['count']} known "
-                         f"advisory(ies) in OSV: {ids}",
-            })
-        elif item.get("error"):
+        if not item.get("vulns"):
+            continue
+        ids = ", ".join(v.get("id") for v in item["vulns"][:3])
+        worst = item.get("max_score")
+        over = blocking and worst is not None and worst >= threshold
+        out.append({
+            "severity": "high" if over else "medium", "source": "dependencies",
+            "claim": f"{item['package']} {item['version']} has {item['count']} known "
+                     f"advisory(ies) in OSV, worst score "
+                     f"{worst if worst is not None else 'unknown'} "
+                     f"(threshold {threshold:g}): {ids}",
+        })
+    for item in vulns:
+        if not item.get("vulns") and item.get("error"):
             out.append({
                 "severity": "info", "source": "dependencies",
                 "claim": f"Reputation lookup for {item['package']} failed "

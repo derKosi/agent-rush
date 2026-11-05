@@ -209,7 +209,8 @@ prop.
 | **Phase 1** | `pip install` / `npm install` runs the install hook, with the probes the planner chose |
 | **Phase 2** | the installed distribution is imported, top-level modules only |
 | **Evidence** | egress attempts (proxy log), filesystem diff, process result, spawns |
-| **Reputation** | each resolved wheel is checked against OSV (osv.dev); `AR_OSV=off` disables |
+| **Reputation** | each resolved artifact is checked against OSV, scored 0–10, blocked at `AR_DEP_RISK_THRESHOLD` (default 7) |
+| **Output** | JSON via the API, SARIF 2.1.0 per run for code-scanning upload |
 | **Dependencies** | declared ones are fetched as **wheels**, hashed and listed — **never executed** (`--only-binary=:all:`) |
 | **After import** | not observed. A payload that waits for a request handler is out of scope |
 | **Dead code** | not analysed. Paths that never execute are never seen |

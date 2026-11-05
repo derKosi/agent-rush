@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import List, Literal, Optional
 
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -25,6 +25,7 @@ if str(REPO) not in sys.path:
 
 from api.guard import Guard                            # noqa: E402
 from orchestrator import batch as batch_mod            # noqa: E402
+from orchestrator import sarif as sarif_mod            # noqa: E402
 from orchestrator import pipeline                      # noqa: E402
 from orchestrator.run_store import RunStore, RunStoreError  # noqa: E402
 from models import client as inference                 # noqa: E402
@@ -216,6 +217,17 @@ def get_run(run_id: str):
         return STORE.read(run_id)
     except RunStoreError as exc:
         raise HTTPException(404, str(exc)) from exc
+
+
+@app.get("/runs/{run_id}/sarif")
+def get_sarif(run_id: str):
+    """SARIF for `github/codeql-action/upload-sarif` and friends."""
+    try:
+        record = STORE.read(run_id)
+    except RunStoreError as exc:
+        raise HTTPException(404, str(exc)) from exc
+    return JSONResponse(sarif_mod.build(record),
+                        media_type="application/sarif+json")
 
 
 @app.get("/runs/{run_id}/artifacts/{name}")
