@@ -205,6 +205,15 @@ function fail(err) {
 }
 
 $('run').addEventListener('click', start);
+// Shareable link to a finished run: /?run=<id>
+const linked = new URLSearchParams(location.search).get('run');
+if (linked) {
+  trace(`loading shared run ${linked}`);
+  setStatus('loading', 'busy');
+  poll(linked).then(() => { timer = setInterval(() => poll(linked).catch(fail), 2000); })
+             .catch(fail);
+}
+
 fetch('health').then((r) => r.json()).then((h) => {
   if (!h.model_configured) {
     $('note').textContent = 'no model configured: the verdict will be rule-based only';
