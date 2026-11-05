@@ -7,6 +7,7 @@ Kept separate from the API so the whole thing can be exercised from a script
 from __future__ import annotations
 
 import json
+import os
 import time
 from pathlib import Path
 
@@ -46,6 +47,17 @@ def _source_excerpt(package_path, limit=1500):
     except (tarfile.TarError, OSError):
         return ""
     return ""
+
+
+def _parse_import_result(log_tail):
+    """Pull the AR_IMPORT_RESULT line out of the import log."""
+    for line in reversed(log_tail.splitlines()):
+        if line.startswith("AR_IMPORT_RESULT "):
+            try:
+                return json.loads(line[len("AR_IMPORT_RESULT "):])
+            except json.JSONDecodeError:
+                return None
+    return None
 
 
 def _parse_inspection(inspection):
@@ -186,6 +198,25 @@ def execute(store, run_id, package_path, question=None, *, egress_mode="none",
                 store.update(run_id, attempts=attempts)
                 continue
         break
+
+    # Second pass: what happens when the package is actually imported. A payload that
+    # waits for first use is invisible to the build run, and that is the common case.
+    if os.environ.get("AR_IMPORT_PASS", "on").lower() != "off":
+        try:
+            imported = sandbox.run_import(
+                Path(package_path), store.dir_for(run_id), task_id=run_id,
+                timeout_s=max(60, current_timeout // 2),
+                probes=planner.probes_env(plan_result),
+            )
+            evidence["import_pass"] = {
+                "exit_code": imported.get("exit_code"),
+                "duration_s": imported.get("duration_s"),
+                "result": _parse_import_result(imported.get("log_tail") or ""),
+                "probe": _read_json(store.dir_for(run_id) / "artifacts" / "import_probe.json"),
+                "log_tail": (imported.get("log_tail") or "")[-1500:],
+            }
+        except Exception as exc:  # noqa: BLE001
+            evidence["import_pass"] = {"error": f"{type(exc).__name__}: {exc}"}
 
     try:
         v = verdict(evidence, question=question, chat=chat, model=model)

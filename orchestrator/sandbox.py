@@ -165,3 +165,45 @@ def run_script(package_path, run_dir, code, *, task_id, timeout_s=60) -> dict:
 
     return {"exit_code": rc, "duration_s": duration, "output": output,
             "stderr_tail": (err or "")[-500:]}
+
+
+def run_import(package_path, run_dir, *, task_id, timeout_s=120, probes="") -> dict:
+    """Second pass: install, then import. Same sandbox, same limits, different question."""
+    package_path = Path(package_path).resolve()
+    run_dir = Path(run_dir).resolve()
+    work = run_dir / "work-import"
+    artifacts_dir = run_dir / "artifacts"
+    work.mkdir(parents=True, exist_ok=True)
+    artifacts_dir.mkdir(parents=True, exist_ok=True)
+
+    env = os.environ.copy()
+    env.update({
+        "AR_WORKDIR": str(work),
+        "AR_TASK_ID": task_id,
+        "AR_MODE": "import",
+        "AR_EGRESS_MODE": "proxy",
+        "AR_ALLOW": "",
+        "AR_TIMEOUT_S": str(timeout_s),
+        "AR_PROBES": probes or "",
+        "AR_PROXY_LOG": str(run_dir / "egress-import.jsonl"),
+    })
+
+    started = time.time()
+    try:
+        proc = subprocess.run(["bash", str(RUNNER), str(package_path), task_id],
+                              env=env, capture_output=True, text=True, timeout=timeout_s + 60)
+        rc, err = proc.returncode, proc.stderr
+    except subprocess.TimeoutExpired:
+        rc, err = -1, "timeout"
+    duration = round(time.time() - started, 2)
+
+    out = work / "out"
+    log = (out / "import.log")
+    log_tail = log.read_text(encoding="utf-8", errors="replace")[-3000:] if log.is_file() else ""
+    for name in ("import.log", "import_probe.json", "pip.log"):
+        src = out / name
+        if src.is_file():
+            shutil.copy2(src, artifacts_dir / name)
+
+    return {"exit_code": rc, "duration_s": duration, "stderr_tail": (err or "")[-500:],
+            "log_tail": log_tail, "work": work}

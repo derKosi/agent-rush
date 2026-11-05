@@ -15,6 +15,23 @@ The agent:
 5. **Observes** — collects three independent evidence sources (below).
 6. **Verdicts** — maps observed attempts to a risk level and returns a downloadable report.
 
+## Two passes, on purpose
+
+The build hook is one place a payload can hide. The more common one is the first import:
+a package that is perfectly polite while installing and exfiltrates when a developer
+types `import`. A single-pass tool reports that package as clean, which is worse than
+reporting nothing.
+
+So each run does two passes in the same hardened container:
+
+1. **build** — `pip install` runs the hook, with the probes the planner chose
+2. **import** — the installed distribution is found via its metadata and each top-level
+   module is imported deliberately
+
+The import pass writes `import_probe.json` and `import.log`, and its egress runs through
+the same deny proxy. A finding from this phase is cited as `import_pass`, so the report
+says which phase produced it.
+
 ## The three evidence sources
 
 Containment is claimed only where it is *recorded*. Each run produces:

@@ -29,8 +29,9 @@ def check(name, fn):
         print(f"  FAIL  {name}: {exc}")
 
 
-def _evidence(exec_=None, egress=None, fsdiff=None, build_log=""):
+def _evidence(exec_=None, egress=None, fsdiff=None, build_log="", import_pass=None):
     return {"build_log_tail": build_log,
+            "import_pass": import_pass,
             "exec": exec_, "egress": egress or {"collected": False, "denied": 0},
             "fsdiff": fsdiff, "artifacts": {"exec.json": {"bytes": 10, "sha256": "x" * 64}},
             "sandbox": {"exit_code": 0}}
@@ -215,6 +216,36 @@ def test_large_work_dir_is_a_finding():
     assert "300 MB" in claims, claims
 
 
+def test_quiet_build_hostile_import_is_high():
+    ev = _evidence(
+        exec_={"pip_exit": 0},
+        egress={"collected": True, "denied": 0},
+        fsdiff={"changed": 0},
+        import_pass={"exit_code": 0, "probe": {"attempts": [
+            "egress_collector.invalid=denied:HTTPError",
+            "spawn_detached=ok:spawned"]}},
+    )
+    findings = rule_findings(ev)
+    imp = [f for f in findings if f["source"] == "import_pass"]
+    assert imp and imp[0]["severity"] == "high", findings
+    assert risk_from_findings(findings) == "high"
+
+
+def test_clean_import_adds_nothing():
+    ev = _evidence(exec_={"pip_exit": 0},
+                   egress={"collected": True, "denied": 0},
+                   fsdiff={"changed": 0},
+                   import_pass={"exit_code": 0, "probe": {"attempts": []}})
+    assert not [f for f in rule_findings(ev) if f["source"] == "import_pass"]
+
+
+def test_import_pass_is_a_valid_citation():
+    ev = _evidence(exec_={"pip_exit": 0}, import_pass={"exit_code": 0, "probe": {}})
+    accepted, rejected = validate(
+        [{"claim": "imported the package", "source": "import_pass"}], ev)
+    assert len(accepted) == 1 and not rejected, (accepted, rejected)
+
+
 def test_refs_do_not_leak_paths():
     refs = evidence_refs(_evidence(exec_={"pip_exit": 0}))
     assert all("/" not in r for r in refs), refs
@@ -242,6 +273,10 @@ def main() -> int:
     check("contradicting summary withheld", test_summary_contradicting_the_risk_is_withheld)
     check("negation is not a contradiction", test_negated_summary_is_not_flagged)
     check("large work dir is a finding", test_large_work_dir_is_a_finding)
+    print("import pass")
+    check("quiet build, hostile import", test_quiet_build_hostile_import_is_high)
+    check("clean import adds nothing", test_clean_import_adds_nothing)
+    check("import pass is citable", test_import_pass_is_a_valid_citation)
     print("refs")
     check("refs are not paths", test_refs_do_not_leak_paths)
 

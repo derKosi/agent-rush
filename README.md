@@ -38,6 +38,19 @@ so it is tracked explicitly rather than asserted.
 *A real run on the Vultr VM: the plan the model chose, the verdict with the injection
 badge, and the evidence behind it.*
 
+**2026-11-05 · the payload that waits**
+
+`sample_pkg_lazy` has a clean build hook and a hostile module body. It is the common real
+evasion, and the reason there are two passes.
+
+| Phase | Observed |
+|---|---|
+| build | nothing. No probe output, no proxy denials, `pip_exit: 0` |
+| import | 4 attempts: egress denied, write denied, decoy key denied, detached child **spawned** |
+| verdict | `high`, citing `import_pass` — "quiet while building and hostile when imported" |
+
+A single-pass tool calls this package clean.
+
 ## Verified runs
 
 Every claim below was observed, not designed. Anything not in this table is unproven.

@@ -16,6 +16,34 @@ T0=$(date +%s)
 # --no-deps:            the dependency graph is not what we are testing
 # --no-build-isolation: the hook must run in this environment, not a network-fetched one
 # --no-build-isolation also means the package's setup.py imports happen here, on purpose.
+# Mode "import": install the package, then import it. A payload that only fires on
+# first use never shows up in the build log; this pass is where it shows up.
+if [ "${AR_MODE:-pip}" = "import" ]; then
+  set +e
+  pip install \
+    --no-deps --no-build-isolation --no-cache-dir \
+    --disable-pip-version-check --root-user-action=ignore \
+    /work/pkg.tar.gz > /work/out/pip.log 2>&1
+  PIP_EXIT=$?
+  python3 /usr/local/bin/import_pass.py > /work/out/import.log 2>&1
+  IMPORT_EXIT=$?
+  set -e
+  cat /work/out/pip.log /work/out/import.log
+
+  cat > /work/out/exec.json <<EOF
+{
+  "started": "$STARTED",
+  "finished": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+  "duration_s": $(( $(date +%s) - T0 )),
+  "mode": "import",
+  "pip_exit": $PIP_EXIT,
+  "import_exit": $IMPORT_EXIT,
+  "artifact": "import.log"
+}
+EOF
+  exit 0
+fi
+
 # Mode "script": run a short Python inspection script written by the model. Same
 # sandbox, same limits -- model-authored code is still untrusted code.
 if [ "${AR_MODE:-pip}" = "script" ]; then

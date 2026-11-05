@@ -249,6 +249,8 @@ def main():
          "   exist, not whether one may start. The report says “spawned” because saying\n"
          "   otherwise would be a lie.\n\n"
          "· The probe report is spoofable — it is written by the thing under test.\n\n"
+         "· It tests the build and the first import. What happens later -- inside a request\n"
+         "   handler, on a cron job -- is out of scope.\n\n"
          "· No browser automation. Track 1 allows it; we cut it first and shipped one\n"
          "   execution pattern completely.\n\n"
          "· It is a gate before an install, not a runtime firewall.",
@@ -277,8 +279,8 @@ def main():
     text(s, 838200, 1950000, 10200000, 2800000,
          "Live demo     45.77.143.94\n"
          "Repository    github.com/derKosi/agent-rush  (MIT)\n"
-         "Tests         64 green, most of them without Docker\n"
-         "Fixtures      three: honest, injected, broken\n"
+         "Tests         71 green, most of them without Docker\n"
+         "Fixtures      four: honest, injected, broken, hostile-at-import\n"
          "Verified runs  containment, injection, batch — each with exact observations",
          size=17, color=TEXT, font="Menlo", space=12)
     text(s, 838200, 5200000, 10200000, 600000,

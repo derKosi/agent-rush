@@ -31,10 +31,12 @@ You give it a package and a question. Then:
    picks which probes to run from a fixed menu, with a reason.
 2. **Execute** — only the chosen probes run, inside a container with a read-only root filesystem,
    no network, a non-root user, and caps on memory, processes and time.
-3. **Observe** — three sources are collected, none of which the sandboxed process controls:
+3. **Import** — the package is installed and then imported, because a payload that waits
+   for first use never appears in a build log. Same container, same probes, same limits.
+4. **Observe** — three sources are collected, none of which the sandboxed process controls:
    the egress proxy log (what was attempted, and the decision), the process result, and a
    filesystem diff.
-4. **Verdict** — rules first, model second. Every model claim must cite a source that exists in
+5. **Verdict** — rules first, model second. Every model claim must cite a source that exists in
    *this* run; a claim citing anything else is rejected and cannot raise the risk level.
 
 ### Why the evidence model matters
@@ -92,7 +94,7 @@ one verified containment moment recorded in the README with the exact observatio
 
 ## Numbers for the form
 
-- 64 tests, most of them runnable without Docker
-- 3 fixtures: honest probe, prompt-injected, broken build
+- 71 tests, most of them runnable without Docker
+- 4 fixtures: honest probe, prompt-injected, broken build, hostile-at-import
 - 12 slides, 1920×1080 cover
 - Public instance: `vc2-1c-2gb`, Frankfurt, ~$0.014/h
