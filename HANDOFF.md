@@ -75,6 +75,16 @@ Alles Visuelle liegt als Datei im Repo; `docs/assets.md` beschreibt es im Detail
   `demo-clean.png`, `demo-dialog.png`. Ältere (`ui-*.png`, `demo-dashboard.png`,
   `demo-blocked.png`) sind überholt und werden nicht mehr referenziert.
 
+## Offen: Push blockiert (06.11., 00:30)
+
+`git push` wird von GitHub mit `fatal error in commit_refs_rules` abgelehnt — auch auf einen
+anderen Branch. Das ist ein Serverfehler auf der Gegenseite, kein Inhaltsproblem: der Remote
+steht bei `efdb6a9`, lokal liegen zwei Commits mehr.
+
+Zu tun: morgen erneut `git push origin main` versuchen. Wenn es weiter scheitert, ist die
+Sicherung `~/agent-rush-2026-11-06.bundle` der vollständige Stand und lässt sich mit
+`git clone ~/agent-rush-2026-11-06.bundle` wiederherstellen.
+
 ## Erster Schritt morgen
 
 ```bash
