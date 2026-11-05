@@ -20,6 +20,9 @@ RUNS = tempfile.mkdtemp(prefix="ar-api-runs-")
 os.environ["AR_RUNS_DIR"] = RUNS
 os.environ["AR_SANDBOX_CMD"] = str(REPO / "tests" / "stub_sandbox.sh")
 os.environ["AR_TIMEOUT_S"] = "20"
+os.environ["AR_RATE_PER_HOUR"] = "500"
+os.environ["AR_MAX_CONCURRENT"] = "4"
+os.environ["AR_API_TOKEN"] = ""
 os.environ.pop("AR_VULTR_KEY", None)
 os.environ.pop("AR_MODEL", None)
 
