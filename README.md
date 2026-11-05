@@ -33,10 +33,16 @@ See [`docs/provenance.md`](docs/provenance.md) for the file-by-file record of wh
 before the event and what was built during it. That distinction is a rule of this hackathon,
 so it is tracked explicitly rather than asserted.
 
-![Agent Rush: the run dashboard](docs/screenshots/ui-dashboard.png)
+![Agent Rush: the run dashboard](docs/screenshots/demo-dashboard.png)
 
-*The live instance: runs today, how many were blocked, and the last eight runs — real
-records from the store, not a mock. The account chip is demo data and says so.*
+*The live instance: runs today, how many were blocked, the model that judged them, and the
+last runs — real records from the store. The account chip is demo data and says so.*
+
+![One blocked run: verdict first](docs/screenshots/demo-blocked.png)
+
+*Opening a run puts the verdict at the top: risk, the model that produced it, duration, and
+the three findings worth reading. Same run, three versions of one package — `2.8.0` and
+`2.9.0` build clean, `2.9.1` pins `urllib3 1.24.1` and is blocked.*
 
 ![The same run further down: findings with their source, including the injection finding](docs/screenshots/ui-injection.png)
 

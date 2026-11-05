@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Agent Rush — Package Triage</title>
-<link rel="stylesheet" href="app.css?v=4">
+<link rel="stylesheet" href="app.css?v=9">
 <script>
   // Set the theme before first paint, otherwise the page flashes white.
   try {
@@ -29,6 +29,8 @@
   </nav>
 
   <div class="topright">
+    <span class="modelchip" id="model-chip" title="model used for planning and verdict">—</span>
+    <span class="status" id="status">idle</span>
     <button class="icon-btn" id="theme-toggle" title="Switch theme" aria-label="Switch theme">☾</button>
     <div class="account">
       <span class="avatar" aria-hidden="true">A</span>
@@ -50,6 +52,22 @@
     <button class="primary" id="new-run">New run</button>
   </div>
 
+  <section class="hero" id="hero" hidden>
+    <div class="hero-top">
+      <span class="badge" id="hero-risk">—</span>
+      <div class="hero-title">
+        <h2 id="hero-pkg">—</h2>
+        <p id="hero-sub" class="hero-sub"></p>
+      </div>
+      <div class="hero-meta">
+        <span class="chip" id="hero-model"></span>
+        <span class="muted" id="hero-duration"></span>
+        <a class="hero-link" id="hero-open" href="#">Open full report →</a>
+      </div>
+    </div>
+    <ul class="hero-findings" id="hero-findings"></ul>
+  </section>
+
   <section class="stats">
     <div class="stat"><span class="k">Runs today</span><strong id="stat-runs">—</strong></div>
     <div class="stat"><span class="k">Blocked</span><strong id="stat-blocked" class="danger">—</strong></div>
@@ -66,7 +84,7 @@
   <div class="grid">
     <section class="panel" id="task">
       <label for="pkg">Package</label>
-      <input id="pkg" value="fixtures/sample_pkg-0.1.0.tar.gz" spellcheck="false">
+      <input id="pkg" value="fixtures/harborline-2.9.1.tar.gz" spellcheck="false">
       <label for="q">Question</label>
       <textarea id="q" rows="2">Is this safe to install on a developer machine?</textarea>
       <label class="row">
@@ -113,6 +131,6 @@
   <span id="runid"></span>
 </footer>
 
-<script src="app.js?v=4"></script>
+<script src="app.js?v=9"></script>
 </body>
 </html>

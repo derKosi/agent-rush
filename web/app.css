@@ -194,7 +194,7 @@ textarea { resize: vertical; }
 /* ---------- history ---------- */
 .history { list-style: none; margin: 0; padding: 0; }
 .run-row {
-  display: grid; grid-template-columns: 148px minmax(0, 1fr) 76px 74px;
+  display: grid; grid-template-columns: 160px minmax(0, 1fr) 96px 76px 64px;
   gap: 14px; align-items: center;
   padding: 8px 10px; border-radius: 8px;
   font: 12px ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -263,3 +263,68 @@ textarea { resize: vertical; }
   .run-row { grid-template-columns: minmax(0, 1fr) 70px; }
   .run-row .when, .run-row .state { display: none; }
 }
+
+.status {
+  font: 11px ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 3px 10px;
+}
+.status.ok { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 45%, transparent); }
+.status.busy { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 45%, transparent); }
+.status.bad { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 45%, transparent); }
+
+/* Run view: when a specific run is opened, the verdict matters more than the form. */
+body.run-view #verdict { order: 1; }
+body.run-view #plan    { order: 2; }
+body.run-view #findings-panel { order: 3; }
+body.run-view #evidence { order: 4; }
+body.run-view #trace-panel { order: 5; }
+body.run-view #task    { order: 6; opacity: .9; }
+
+.modelchip {
+  font: 11px ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--text-dim);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 3px 10px;
+  white-space: nowrap;
+}
+.modelchip.off { color: var(--muted); }
+
+/* The result first. This is the thing a reader came for. */
+.hero {
+  margin: 18px 0 4px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--muted);
+  border-radius: 12px;
+  padding: 16px 18px;
+  box-shadow: var(--shadow);
+}
+.hero.high { border-left-color: var(--danger); }
+.hero.medium { border-left-color: var(--warn); }
+.hero.low { border-left-color: var(--accent); }
+.hero-top { display: flex; align-items: flex-start; gap: 14px; flex-wrap: wrap; }
+.hero-title { min-width: 0; flex: 1 1 340px; }
+.hero-title h2 { margin: 0; font-size: 18px; letter-spacing: -.01em; overflow-wrap: anywhere; }
+.hero-sub { margin: 3px 0 0; color: var(--muted); font-size: 12.5px; }
+.hero-meta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.hero-link { color: var(--accent); text-decoration: none; font-size: 12.5px; }
+.hero-link:hover { text-decoration: underline; }
+.hero-findings { list-style: none; margin: 12px 0 0; padding: 0; }
+.hero-findings li {
+  font-size: 12.5px; color: var(--text-dim); line-height: 1.55;
+  padding: 5px 0 5px 10px; border-left: 2px solid var(--border); margin-bottom: 3px;
+}
+.hero-findings li.high { border-left-color: var(--danger); }
+.hero-findings li.medium { border-left-color: var(--warn); }
+.hero-findings li.low { border-left-color: var(--info); }
+.hero-findings .sev { font: 10.5px ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--muted); text-transform: uppercase; margin-right: 8px; }
+.hero-findings .none { color: var(--accent); border-left-color: var(--accent); }
+
+.run-row { grid-template-columns: 160px minmax(0, 1fr) 96px 72px 64px; }
+.run-row .model { font-size: 11px; color: var(--muted); }
+@media (max-width: 900px) { .run-row .model { display: none; } }

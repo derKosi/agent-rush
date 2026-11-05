@@ -128,6 +128,47 @@ from setuptools import setup  # noqa: E402,F401
 EOF
 )
 
+
+# A fictional product line for the demo: same package, three versions, one bad release.
+# The name is free on both PyPI and npm (checked), so nobody confuses it with something real.
+build_product() {
+  local name="$1" version="$2" requires="$3"
+  mkdir -p "$BUILD/$name-$version"
+  printf 'from setuptools import setup\n\nsetup(\n    name="%s",\n    version="%s",\n    description="Harborline analytics toolkit",\n    install_requires=["%s"],\n    packages=["harborline"],\n)\n' \
+    "$name" "$version" "$requires" > "$BUILD/$name-$version/setup.py"
+  # A package with actual code, so a verdict talks about the dependency rather than
+  # about the fixture being empty.
+  mkdir -p "$BUILD/$name-$version/harborline"
+  cat > "$BUILD/$name-$version/harborline/__init__.py" <<'PYMOD'
+"""Harborline analytics toolkit."""
+
+__version__ = "0.0.0"
+
+
+def parse_amount(text):
+    """'1.234,56 EUR' -> (1234.56, 'EUR')."""
+    cleaned = str(text).replace(".", "").replace(",", ".")
+    parts = cleaned.split()
+    value = float(parts[0])
+    return value, (parts[1] if len(parts) > 1 else "EUR")
+
+
+def summarise(rows, key="amount"):
+    """Total and mean for a list of dicts."""
+    values = [row[key] for row in rows if key in row]
+    if not values:
+        return {"total": 0, "mean": 0, "count": 0}
+    total = sum(values)
+    return {"total": total, "mean": total / len(values), "count": len(values)}
+PYMOD
+  printf 'Metadata-Version: 2.1\nName: %s\nVersion: %s\nRequires-Dist: %s\nSummary: Harborline analytics toolkit\n\nInternal build of Harborline.\n' \
+    "$name" "$version" "$requires" > "$BUILD/$name-$version/PKG-INFO"
+  printf 'Harborline analytics toolkit.\n' > "$BUILD/$name-$version/README.md"
+  COPYFILE_DISABLE=1 tar czf "$HERE/$name-$version.tar.gz" --exclude '._*' \
+    -C "$BUILD" "$name-$version"
+  echo "built: $name-$version.tar.gz"
+}
+
 build_pkg() {
   local name="$1" version="$2" inject="$3"
   mkdir -p "$BUILD/$name-$version"
@@ -239,3 +280,8 @@ build_pkg sample_pkg_deps 0.1.0 deps
 build_pkg sample_pkg_node 0.1.0 node
 build_pkg sample_pkg_vuln 0.1.0 vuln
 build_pkg sample_pkg_stale 0.1.0 stale
+
+# The demo story: 2.8.0 is clean, 2.9.0 drifts a minor behind, 2.9.1 pulls in a vulnerable dep.
+build_product harborline 2.8.0 "six>=1.16"
+build_product harborline 2.9.0 "six==1.15.0"
+build_product harborline 2.9.1 "urllib3==1.24.1"

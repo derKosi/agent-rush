@@ -377,6 +377,7 @@ def verdict(evidence, question=None, chat=None, model=None):
         return result
 
     result["model_used"] = True
+    result["model"] = model or os.environ.get("AR_MODEL")
     summary = parsed.get("summary")
     if summary_contradicts(summary, result["risk"]):
         result["notes"].append("model summary contradicted the evidence; withheld")

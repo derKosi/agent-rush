@@ -5,6 +5,9 @@ let timer = null;
 
 function setStatus(text, kind) {
   const el = $('status');
+  // Defensive on purpose: a missing element must never take the rest of the page down
+  // with it. That is exactly what happened when the top bar was redesigned.
+  if (!el) return;
   el.textContent = text;
   el.className = 'status' + (kind ? ' ' + kind : '');
 }
@@ -38,6 +41,54 @@ function renderPlan(plan) {
     chips.appendChild(s);
   }
   $('plan-reason').textContent = plan.reason || '';
+}
+
+function modelLabel(run) {
+  const v = run.verdict || {};
+  const name = run.model || v.model;
+  if (name) return name;
+  return v.model_used ? 'model' : 'rules only';
+}
+
+function renderHero(run) {
+  const hero = $('hero');
+  const v = run.verdict || {};
+  if (!hero || !v.risk) return;
+  const level = v.risk;
+  hero.hidden = false;
+  hero.className = 'hero ' + (level === 'high' ? 'high' : level === 'medium' ? 'medium' : 'low');
+
+  const risk = $('hero-risk');
+  risk.textContent = level;
+  risk.className = 'badge ' + (level === 'high' ? 'high' : level === 'low' ? 'low' : 'muted');
+
+  $('hero-pkg').textContent = ((run.task || {}).package || '—').split('/').pop();
+  $('hero-sub').textContent = (run.task || {}).question || '';
+  $('hero-model').textContent = modelLabel(run);
+  const dur = ((run.evidence || {}).sandbox || {}).duration_s;
+  $('hero-duration').textContent = dur ? `${dur}s` : '';
+  $('hero-open').href = `?run=${run.id}`;
+
+  const list = $('hero-findings');
+  list.innerHTML = '';
+  const findings = (v.findings || []).filter((f) => f.severity === 'high' || f.severity === 'medium').slice(0, 3);
+  if (!findings.length) {
+    const li = document.createElement('li');
+    li.className = 'none';
+    li.textContent = 'No high or medium findings. Nothing was blocked, and nothing was observed.';
+    list.appendChild(li);
+    return;
+  }
+  for (const f of findings) {
+    const li = document.createElement('li');
+    li.className = f.severity || 'info';
+    const sev = document.createElement('span');
+    sev.className = 'sev';
+    sev.textContent = f.severity;
+    li.appendChild(sev);
+    li.appendChild(document.createTextNode(f.claim || ''));
+    list.appendChild(li);
+  }
 }
 
 function renderVerdict(v) {
@@ -156,6 +207,7 @@ async function poll(id) {
   if (run.verdict) {
     renderVerdict(run.verdict);
     renderFindings(run.verdict);
+    renderHero(run);
   }
   renderEvidence(run);
   setStatus(run.state, run.state === 'done' ? 'ok' : run.state === 'failed' ? 'bad' : 'busy');
@@ -170,6 +222,7 @@ async function poll(id) {
 }
 
 async function start() {
+  document.body.classList.remove('run-view');
   const pkg = $('pkg').value.trim();
   $('run').disabled = true;
   $('trace-list').innerHTML = '';
@@ -213,6 +266,7 @@ $('run').addEventListener('click', start);
 // Shareable link to a finished run: /?run=<id>
 const linked = new URLSearchParams(location.search).get('run');
 if (linked) {
+  document.body.classList.add('run-view');
   trace(`loading shared run ${linked}`);
   setStatus('loading', 'busy');
   poll(linked).then((run) => {
@@ -223,7 +277,14 @@ if (linked) {
 }
 
 fetch('health').then((r) => r.json()).then((h) => {
-  if (!h.model_configured) {
+  const chip = $('model-chip');
+  if (!chip) return;
+  if (h.model_configured) {
+    chip.textContent = `${h.model || 'model'} · reasoning ${h.reasoning || 'off'}`;
+    chip.classList.remove('off');
+  } else {
+    chip.textContent = 'rules only';
+    chip.classList.add('off');
     $('note').textContent = 'no model configured: the verdict will be rule-based only';
   }
 }).catch(() => {});
@@ -277,6 +338,10 @@ async function loadHistory() {
       pkg.className = 'pkg';
       pkg.textContent = ((run.task || {}).package || '—').split('/').pop();
 
+      const model = document.createElement('span');
+      model.className = 'model';
+      model.textContent = modelLabel(run);
+
       const risk = document.createElement('span');
       const level = (run.verdict || {}).risk || '—';
       risk.className = 'badge ' + (level === 'high' ? 'high' : level === 'low' ? 'low' : 'muted');
@@ -286,7 +351,7 @@ async function loadHistory() {
       state.className = 'state muted';
       state.textContent = run.state;
 
-      li.append(when, pkg, risk, state);
+      li.append(when, pkg, model, risk, state);
       li.addEventListener('click', () => {
         history.replaceState(null, '', `?run=${run.id}`);
         trace(`loading shared run ${run.id}`);
@@ -321,6 +386,7 @@ $('theme-toggle').addEventListener('click', () => {
 });
 
 $('new-run').addEventListener('click', () => {
+  document.body.classList.remove('run-view');
   $('pkg').focus();
   document.getElementById('task').scrollIntoView({ behavior: 'smooth', block: 'center' });
 });

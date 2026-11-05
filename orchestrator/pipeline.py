@@ -255,6 +255,8 @@ def execute(store, run_id, package_path, question=None, *, egress_mode="none",
     else:
         evidence["dependencies"] = {"declared": declared, "resolved": [], "skipped": True}
 
+    model_name = (model or os.environ.get("AR_MODEL") or "").strip() or None
+
     try:
         v = verdict(evidence, question=question, chat=chat, model=model)
     except Exception as exc:  # noqa: BLE001
@@ -266,6 +268,7 @@ def execute(store, run_id, package_path, question=None, *, egress_mode="none",
         run_id, state="done", finished=_now(),
         evidence=evidence, verdict=v,
         sandbox=evidence["sandbox"],
+        model=model_name,
         attempts=attempts,
         outcome=(attempts[-1]["diagnosis"] or {}).get("kind") if attempts else None,
     )
