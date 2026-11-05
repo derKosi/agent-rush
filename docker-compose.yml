@@ -1,0 +1,29 @@
+# Self-hosting in one command:
+#
+#   docker build -t ar-sandbox:0.1 sandbox/     # the sandbox image, on the host daemon
+#   docker compose up --build
+#
+# Known issue: the proxy phase of a run behaves differently when the app itself is
+# containerised (a node fixture came out medium instead of high in a smoke test). The VM
+# deployment is the reference; use this for local runs.
+#
+# The app mounts ${PWD}/work at the SAME absolute path inside the container. That is not
+# cosmetic: it asks the host daemon to bind-mount a path, and the daemon resolves paths on
+# the host. Identical paths on both sides are the only way that works without a shared
+# named volume.
+services:
+  app:
+    build:
+      context: .
+      dockerfile: deploy/app.Dockerfile
+    image: agent-rush-app:0.1
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    environment:
+      AR_RUNS_DIR: ${PWD}/work/runs
+    volumes:
+      - ${PWD}/work:${PWD}/work
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: unless-stopped

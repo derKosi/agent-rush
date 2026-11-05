@@ -92,7 +92,14 @@ triage:
 
 ## Running your own instance
 
-The demo runs on a Vultr VM (`vc2-1c-2gb`, ~$0.014/h). To stand up your own:
+Fastest path, any host with Docker:
+
+```bash
+docker build -t ar-sandbox:0.1 sandbox/
+docker compose up --build        # app on :8080
+```
+
+The demo runs on a Vultr VM (`vc2-1c-2gb`, ~$0.014/h). To stand up your own the long way:
 
 ```bash
 # on a fresh Ubuntu 24.04 box with root access

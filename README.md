@@ -238,6 +238,30 @@ Full detail, threat model and the containment invariants: [`docs/architecture.md
   (OpenAI-compatible). No local GPU, no third-party inference.
 - **Vultr Firewall** — only 80/443 inbound; the API and proxy are never publicly reachable.
 
+## Run it yourself
+
+Two ways, pick one.
+
+**Compose (one command, any host with Docker):**
+
+```bash
+docker build -t ar-sandbox:0.1 sandbox/
+docker compose up --build          # http://localhost:8080
+```
+
+**VM (what the demo runs on):** `deploy/vm-bootstrap.sh`, then
+`deploy/install-service.sh` — see [`docs/runbook.md`](docs/runbook.md).
+
+Two things to know before you point this at anything real:
+
+- The app mounts `/var/run/docker.sock` because it spawns sandbox containers. That is
+  root-equivalent on the host. Caddy in front and a bearer token (`AR_API_TOKEN`) are not
+  optional if the port is reachable from outside.
+- Known issue with the compose path: in a smoke test the node fixture came out `medium`
+  instead of `high`, because the proxy phase behaves differently when the app itself runs
+  in a container and asks the host daemon for an internal network. The VM deployment is the
+  reference; the compose file is for local use.
+
 ## Quickstart (on the VM, after the kickoff)
 
 ```bash
