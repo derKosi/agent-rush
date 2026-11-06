@@ -72,8 +72,10 @@ Two takes exist:
 |---|---|---|
 | `recordings/demo-v1.mp4` | `en-US-AndrewNeural` (male) | 1:53 |
 | `recordings/demo-v2.mp4` | `en-US-AvaNeural` (female, expressive) | 2:00 |
+| `recordings/demo-v3.mp4` | `fr-FR-VivienneMultilingualNeural` (female, French native) | 1:49 |
 
-Ava reads slower, so the holds regenerate and the screen pass re-times itself — the visuals
+The French multilingual voice reads English with a light accent — clear, but audibly not a native
+speaker. Ava reads slower than Andrew, so the holds regenerate and the screen pass re-times itself — the visuals
 follow the voice, never the other way round. The table below is the v1 measurement.
 
 The table above was an estimate at 135 wpm. The actual voice runs faster, so the video is
