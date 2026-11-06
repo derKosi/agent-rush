@@ -61,3 +61,18 @@ The page starts at y≈200 px in the 2880-wide capture, and libx264 refuses an o
 Earlier experiments that are no longer files of record: a `probe.png` crop test (y=190/194)
 that showed the page edge 6 px off, and the light-theme check measured 240–250 across sidebar,
 topbar and content — i.e. the light palette is complete, not half-applied.
+
+## Superseded UI generations (kept as facts, not files)
+
+Three layouts existed before the current one. Their screenshots are no longer referenced; what
+they showed, in case a number is needed later:
+
+- **Version 1** — single column, hero card with risk/model/duration, four stat cards under it,
+  then Plan / Verdict / Findings / Evidence / Trace as separate panels, task form always open.
+  Numbers on screen at the time: 3 runs, 1 blocked, median 14 s.
+- **Version 2** — sidebar with a run rail, tabs (Summary / Dependencies / Evidence), form in a
+  dialog. Numbers: 5 runs, 1 blocked, median 13.4 s.
+- **Version 3 (current)** — the same, plus the top bar with workspace, model chip and account.
+
+The `probe.png` and `probe_190/194.png` files were crop-offset tests, not product states: they
+showed the page edge 6 px off, which is why the recording script crops at y=198.

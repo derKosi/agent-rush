@@ -63,6 +63,27 @@ Every number in here was produced by a real run on the live instance — nothing
 
 Total spoken words ≈ 343 → 2:32 at 135 wpm. Cut the hook's third sentence if you need 2:15.
 
+
+## Measured with edge-tts (en-US-AndrewNeural)
+
+The table above was an estimate at 135 wpm. The actual voice runs faster, so the video is
+**1:53.2** and the beats are:
+
+| Beat | Hold |
+|---|---|
+| dashboard | 6.7s |
+| hook | 18.4s |
+| verdict | 18.7s |
+| dependencies | 20.6s |
+| regression | 15.5s (9.0 + 6.5, two runs) |
+| evidence | 17.8s |
+| close | 8.9s |
+| end card | 6.3s |
+
+`tools/build-voiceover.py` regenerates the audio and writes `recordings/voice/holds.txt`;
+`tools/make-video.sh` reads it and times the screen pass to it. Swapping the voice (ElevenLabs,
+another edge-tts voice) means running those two scripts again — the visuals follow automatically.
+
 ## Deutsche Fassung
 
 **0:06**

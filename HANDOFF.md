@@ -9,7 +9,8 @@ Zum Weiterarbeiten morgen. Alles hier ist belegt; was offen ist, steht unten.
 | Repo | `~/Documents/Dev/agent-rush` · `github.com/derKosi/agent-rush` (MIT) |
 | Live | <http://45.77.143.94/> · Instanz `f0770065`… → `vc2-1c-2gb`, Frankfurt, ~$0.014/h |
 | VM | `root@45.77.143.94`, Dienst `agent-rush`, Repo unter `/opt/agent-rush` |
-| Aufnahme | `recordings/demo.mp4` — **2:34**, 1440×732, Dark Mode, **ohne Ton** (gitignored) |
+| Video v1 | `recordings/demo-v1.mp4` — **1:53**, 1440×732, Dark Mode, mit edge-tts-Stimme (gitignored) |
+| Bauen | `bash tools/make-video.sh` — Stimme erzeugen, Bildschirm passend takten, muxen |
 | Transkript | `docs/transcript.md` — EN + DE, 343 Wörter ≈ 2:32 |
 | Doku | `README.md`, `docs/architecture.md`, `docs/ci.md`, `docs/market.md`, `docs/roadmap.md`, `docs/provenance.md`, `docs/build-log.md`, `docs/assets.md`, `docs/submission.md` |
 | Blog | `blog/` (vier Fassungen + Bilder) — liegt **außerhalb** des Repos |
@@ -28,9 +29,11 @@ Letzter Commit: `6bac416`. 96 Tests, 13 Fixtures, 5 Läufe im Store.
 
 ## Was noch fehlt (Pflicht)
 
-1. **Vertonung.** Die Aufnahme ist jetzt 2:34 lang und folgt dem Transkript Beat für Beat —
-   die Haltezeiten passen zu den 343 Wörtern. Es fehlt nur die Stimme (ElevenLabs) und der
-   Schnitt. Neu aufnehmen: `bash tools/record-demo.sh http://45.77.143.94`.
+1. **Stimme ersetzen, falls gewünscht.** v1 hat eine synthetische edge-tts-Stimme
+   (`en-US-AndrewNeural`). Wer ElevenLabs will: dieselben acht Beats dort einsprechen, die mp3s
+   in `recordings/voice/beat-N.mp3` legen und `bash tools/make-video.sh` erneut laufen lassen —
+   die Bilder takten sich dann neu. Bekannte Ungenauigkeit: pro Navigation ~0,3 s Verzug,
+   in Summe ~2,7 s, weshalb der Ton am Ende leicht vorläuft.
 2. **Submission-Formular** auf LabLab. Text steht in `docs/submission.md`.
 3. **Video-Upload** und Application-URL im Formular eintragen.
 
