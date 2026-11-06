@@ -9,7 +9,7 @@ Zum Weiterarbeiten morgen. Alles hier ist belegt; was offen ist, steht unten.
 | Repo | `~/Documents/Dev/agent-rush` · `github.com/derKosi/agent-rush` (MIT) |
 | Live | <http://45.77.143.94/> · Instanz `f0770065`… → `vc2-1c-2gb`, Frankfurt, ~$0.014/h |
 | VM | `root@45.77.143.94`, Dienst `agent-rush`, Repo unter `/opt/agent-rush` |
-| Aufnahme | `recordings/demo.mp4` — 59,8 s, 1440×736, Dark Mode, **ohne Ton** (gitignored) |
+| Aufnahme | `recordings/demo.mp4` — **2:34**, 1440×732, Dark Mode, **ohne Ton** (gitignored) |
 | Transkript | `docs/transcript.md` — EN + DE, 343 Wörter ≈ 2:32 |
 | Doku | `README.md`, `docs/architecture.md`, `docs/ci.md`, `docs/market.md`, `docs/roadmap.md`, `docs/provenance.md`, `docs/build-log.md`, `docs/assets.md`, `docs/submission.md` |
 | Blog | `blog/` (vier Fassungen + Bilder) — liegt **außerhalb** des Repos |
@@ -28,8 +28,9 @@ Letzter Commit: `6bac416`. 96 Tests, 13 Fixtures, 5 Läufe im Store.
 
 ## Was noch fehlt (Pflicht)
 
-1. **Vertonung + Schnitt.** Aufnahme ist 60 s, Transkript 2:32 — passt nicht. Entweder neu
-   aufnehmen mit längeren Haltezeiten oder Text auf ~150 Wörter kürzen.
+1. **Vertonung.** Die Aufnahme ist jetzt 2:34 lang und folgt dem Transkript Beat für Beat —
+   die Haltezeiten passen zu den 343 Wörtern. Es fehlt nur die Stimme (ElevenLabs) und der
+   Schnitt. Neu aufnehmen: `bash tools/record-demo.sh http://45.77.143.94`.
 2. **Submission-Formular** auf LabLab. Text steht in `docs/submission.md`.
 3. **Video-Upload** und Application-URL im Formular eintragen.
 
@@ -75,15 +76,11 @@ Alles Visuelle liegt als Datei im Repo; `docs/assets.md` beschreibt es im Detail
   `demo-clean.png`, `demo-dialog.png`. Ältere (`ui-*.png`, `demo-dashboard.png`,
   `demo-blocked.png`) sind überholt und werden nicht mehr referenziert.
 
-## Offen: Push blockiert (06.11., 00:30)
+## Push: erledigt
 
-`git push` wird von GitHub mit `fatal error in commit_refs_rules` abgelehnt — auch auf einen
-anderen Branch. Das ist ein Serverfehler auf der Gegenseite, kein Inhaltsproblem: der Remote
-steht bei `efdb6a9`, lokal liegen zwei Commits mehr.
-
-Zu tun: morgen erneut `git push origin main` versuchen. Wenn es weiter scheitert, ist die
-Sicherung `~/agent-rush-2026-11-06.bundle` der vollständige Stand und lässt sich mit
-`git clone ~/agent-rush-2026-11-06.bundle` wiederherstellen.
+Der `fatal error in commit_refs_rules` war transient; am 06.11. um 19:46 UTC ging der Push
+durch. Remote und lokal standen danach auf demselben Commit. Sicherung bleibt:
+`~/agent-rush-2026-11-06.bundle`.
 
 ## Erster Schritt morgen
 

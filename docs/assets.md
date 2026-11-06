@@ -47,3 +47,17 @@ wheels are hashed and listed, never installed.
 Older screenshots (`ui-run.png`, `ui-injection.png`, `ui-dashboard*.png`, `ui-history.png`,
 `demo-dashboard.png`, `demo-blocked.png`) are from earlier layouts and are no longer referenced
 by the README. They are history, not documentation.
+
+## Recording
+
+`recordings/demo.mp4` (gitignored) · 2:34 · 1440×732 · dark · **silent**.
+Produced by `tools/record-demo.sh`, which reads the run ids from the API, drives Safari in one
+tab, records the screen and crops the browser chrome off. The holds follow `docs/transcript.md`
+beat for beat, so the narration fits without re-timing.
+
+Crop note, learned the hard way: `screencapture -v` ignores `-R` and records the whole screen.
+The page starts at y≈200 px in the 2880-wide capture, and libx264 refuses an odd height.
+
+Earlier experiments that are no longer files of record: a `probe.png` crop test (y=190/194)
+that showed the page edge 6 px off, and the light-theme check measured 240–250 across sidebar,
+topbar and content — i.e. the light palette is complete, not half-applied.
