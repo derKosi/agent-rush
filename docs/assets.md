@@ -76,3 +76,17 @@ they showed, in case a number is needed later:
 
 The `probe.png` and `probe_190/194.png` files were crop-offset tests, not product states: they
 showed the page edge 6 px off, which is why the recording script crops at y=198.
+
+## What the replaced previews showed (numbers worth keeping)
+
+These were working images, not documentation. The only facts in them that are not in a file:
+
+| Preview | Fact |
+|---|---|
+| `ui7_preview` / `dash_preview` | Dashboard read **35 runs today, 26 blocked, median 14 s, runtimes python · npm** — the 26 blocked came from testing, not from a customer |
+| `hist_preview` | History panel listed 8 runs between 20:35 and 22:08 UTC, badges high/low, all `done` |
+| `run_preview` | Run view with the hero at the top: `high`, `glm-5.2`, 13.28 s, three findings, 6 informational notes folded |
+| `svg_preview2` | The architecture SVG rendered correctly at 1240×780 in Safari; one arrow crossed the resolve box and was rerouted around the left edge at y=495 |
+| `light_preview` | Light theme test served from `file://` — the fetch to `runs` failed there by design, so the stats showed `—` |
+| `probe.png` | Crop test at y=190/194: the page edge sat 6 px off, which is why the script crops at 198 |
+| `shot2_small` | A capture of the desktop only — Safari was not frontmost. The reason every later capture activates Safari first. |
