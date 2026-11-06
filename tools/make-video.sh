@@ -9,6 +9,7 @@
 set -uo pipefail
 BASE="${1:-http://45.77.143.94}"
 VOICE="${2:-en-US-AndrewNeural}"
+NAME="${3:-demo-v1}"
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
 V="$HERE/recordings/voice"
 OUT="$HERE/recordings"
@@ -88,6 +89,6 @@ done
 STYLE="FontName=Arial,FontSize=19,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BorderStyle=1,Outline=2,Shadow=0,MarginV=36"
 "$FF" -y -loglevel error -i "$OUT/demo-video.mp4" -i "$V/voiceover.mp3" \
   -vf "subtitles=$V/subs.srt:force_style='$STYLE'" \
-  -c:v libx264 -crf 20 -preset veryfast -c:a aac -b:a 128k -shortest "$OUT/demo-v1.mp4"
-"$FF" -hide_banner -i "$OUT/demo-v1.mp4" 2>&1 | grep -E "Duration|Stream"
-echo "wrote $OUT/demo-v1.mp4"
+  -c:v libx264 -crf 20 -preset veryfast -c:a aac -b:a 128k -shortest "$OUT/$NAME.mp4"
+"$FF" -hide_banner -i "$OUT/$NAME.mp4" 2>&1 | grep -E "Duration|Stream"
+echo "wrote $OUT/$NAME.mp4"

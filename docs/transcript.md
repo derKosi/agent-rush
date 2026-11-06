@@ -64,7 +64,17 @@ Every number in here was produced by a real run on the live instance — nothing
 Total spoken words ≈ 343 → 2:32 at 135 wpm. Cut the hook's third sentence if you need 2:15.
 
 
-## Measured with edge-tts (en-US-AndrewNeural)
+## Measured with edge-tts
+
+Two takes exist:
+
+| File | Voice | Length |
+|---|---|---|
+| `recordings/demo-v1.mp4` | `en-US-AndrewNeural` (male) | 1:53 |
+| `recordings/demo-v2.mp4` | `en-US-AvaNeural` (female, expressive) | 2:00 |
+
+Ava reads slower, so the holds regenerate and the screen pass re-times itself — the visuals
+follow the voice, never the other way round. The table below is the v1 measurement.
 
 The table above was an estimate at 135 wpm. The actual voice runs faster, so the video is
 **1:53.2** and the beats are:

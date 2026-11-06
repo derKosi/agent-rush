@@ -9,7 +9,8 @@ Zum Weiterarbeiten morgen. Alles hier ist belegt; was offen ist, steht unten.
 | Repo | `~/Documents/Dev/agent-rush` · `github.com/derKosi/agent-rush` (MIT) |
 | Live | <http://45.77.143.94/> · Instanz `f0770065`… → `vc2-1c-2gb`, Frankfurt, ~$0.014/h |
 | VM | `root@45.77.143.94`, Dienst `agent-rush`, Repo unter `/opt/agent-rush` |
-| Video v1 | `recordings/demo-v1.mp4` — **1:53**, 1440×732, Dark Mode, edge-tts-Stimme, **Untertitel eingebrannt** (gitignored) |
+| Video v1 | `recordings/demo-v1.mp4` — **1:53**, männliche Stimme (`en-US-AndrewNeural`) (gitignored) |
+| Video v2 | `recordings/demo-v2.mp4` — **2:00**, weibliche Stimme (`en-US-AvaNeural`), Untertitel eingebrannt (gitignored) |
 | Untertitel | `recordings/voice/subs.srt` (8 Cues, dieselben Zeiten wie die Tonspur) |
 | Bauen | `bash tools/make-video.sh` — Stimme erzeugen, Bildschirm passend takten, muxen |
 | Transkript | `docs/transcript.md` — EN + DE, 343 Wörter ≈ 2:32 |
