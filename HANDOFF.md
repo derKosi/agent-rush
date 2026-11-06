@@ -9,7 +9,8 @@ Zum Weiterarbeiten morgen. Alles hier ist belegt; was offen ist, steht unten.
 | Repo | `~/Documents/Dev/agent-rush` · `github.com/derKosi/agent-rush` (MIT) |
 | Live | <http://45.77.143.94/> · Instanz `f0770065`… → `vc2-1c-2gb`, Frankfurt, ~$0.014/h |
 | VM | `root@45.77.143.94`, Dienst `agent-rush`, Repo unter `/opt/agent-rush` |
-| Video v1 | `recordings/demo-v1.mp4` — **1:53**, 1440×732, Dark Mode, mit edge-tts-Stimme (gitignored) |
+| Video v1 | `recordings/demo-v1.mp4` — **1:53**, 1440×732, Dark Mode, edge-tts-Stimme, **Untertitel eingebrannt** (gitignored) |
+| Untertitel | `recordings/voice/subs.srt` (8 Cues, dieselben Zeiten wie die Tonspur) |
 | Bauen | `bash tools/make-video.sh` — Stimme erzeugen, Bildschirm passend takten, muxen |
 | Transkript | `docs/transcript.md` — EN + DE, 343 Wörter ≈ 2:32 |
 | Doku | `README.md`, `docs/architecture.md`, `docs/ci.md`, `docs/market.md`, `docs/roadmap.md`, `docs/provenance.md`, `docs/build-log.md`, `docs/assets.md`, `docs/submission.md` |
@@ -33,7 +34,8 @@ Letzter Commit: `6bac416`. 96 Tests, 13 Fixtures, 5 Läufe im Store.
    (`en-US-AndrewNeural`). Wer ElevenLabs will: dieselben acht Beats dort einsprechen, die mp3s
    in `recordings/voice/beat-N.mp3` legen und `bash tools/make-video.sh` erneut laufen lassen —
    die Bilder takten sich dann neu. Bekannte Ungenauigkeit: pro Navigation ~0,3 s Verzug,
-   in Summe ~2,7 s, weshalb der Ton am Ende leicht vorläuft.
+   in Summe ~2,7 s. Das ist korrigiert: `make-video.sh` zieht 0,34 s pro Navigation von den
+   Haltezeiten ab, danach sitzen Bild und Ton zusammen.
 2. **Submission-Formular** auf LabLab. Text steht in `docs/submission.md`.
 3. **Video-Upload** und Application-URL im Formular eintragen.
 

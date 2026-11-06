@@ -47,6 +47,17 @@ sleep 2
 nav() { osascript -e "tell application \"Safari\" to set URL of front document to \"$1\"" >/dev/null; sleep "$2"; }
 nav "$BASE/?theme=dark&v=$(date +%s)" 3
 
+# Every navigation costs ~0.34 s of real time, so a hold taken from the audio makes the Visual
+# fall behind a little more each beat. Subtract it from every hold but the first.
+"$HERE/.venv/bin/python" - "$V/holds.txt" <<'PY' > "$V/holds_adj.txt"
+import sys
+holds = [float(x) for x in open(sys.argv[1]).read().split()]
+adj = [holds[0]] + [max(1.5, h - 0.34) for h in holds[1:]]
+print("\n".join(f"{h:.2f}" for h in adj))
+PY
+H=()
+while IFS= read -r line; do H+=("$line"); done < "$V/holds_adj.txt"
+
 echo "== 3/4 screen pass (${TOTAL}s of narration)"
 rm -f "$OUT/demo-raw.mov"
 screencapture -v -V "$("$HERE/.venv/bin/python" -c "print(int($TOTAL)+3)")" "$OUT/demo-raw.mov" &
@@ -73,7 +84,10 @@ for i in 1 2 3 4 5 6 7 8; do
   echo "file '$V/sil.mp3'" >> "$V/list.txt"
 done
 "$FF" -y -loglevel error -f concat -safe 0 -i "$V/list.txt" -c:a libmp3lame -q:a 4 "$V/voiceover.mp3"
+"$HERE/.venv/bin/python" "$HERE/tools/make-subtitles.py" >/dev/null || exit 5
+STYLE="FontName=Arial,FontSize=19,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BorderStyle=1,Outline=2,Shadow=0,MarginV=36"
 "$FF" -y -loglevel error -i "$OUT/demo-video.mp4" -i "$V/voiceover.mp3" \
-  -c:v copy -c:a aac -b:a 128k -shortest "$OUT/demo-v1.mp4"
+  -vf "subtitles=$V/subs.srt:force_style='$STYLE'" \
+  -c:v libx264 -crf 20 -preset veryfast -c:a aac -b:a 128k -shortest "$OUT/demo-v1.mp4"
 "$FF" -hide_banner -i "$OUT/demo-v1.mp4" 2>&1 | grep -E "Duration|Stream"
 echo "wrote $OUT/demo-v1.mp4"

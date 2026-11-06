@@ -90,3 +90,5 @@ These were working images, not documentation. The only facts in them that are no
 | `light_preview` | Light theme test served from `file://` — the fetch to `runs` failed there by design, so the stats showed `—` |
 | `probe.png` | Crop test at y=190/194: the page edge sat 6 px off, which is why the script crops at 198 |
 | `shot2_small` | A capture of the desktop only — Safari was not frontmost. The reason every later capture activates Safari first. |
+| `ui_preview` | First layout: single column, hero card (risk · package · model · duration · "Open full report"), findings with severity labels, no sidebar. |
+| `svg_preview` | Same generation from the other angle: TASK / PLAN / VERDICT / FINDINGS stacked, the topbar reading "Agent Rush — untrusted package triage · Vultr". |
