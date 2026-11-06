@@ -82,6 +82,19 @@ Der `fatal error in commit_refs_rules` war transient; am 06.11. um 19:46 UTC gin
 durch. Remote und lokal standen danach auf demselben Commit. Sicherung bleibt:
 `~/agent-rush-2026-11-06.bundle`.
 
+## Reihenfolge, die zählt
+
+`tools/selftest.sh` mit Ziel-URL erzeugt **drei eigene Läufe** (`sample_pkg_deps`, `_stale`,
+`_vuln`). Für ein sauberes Demo-Bild also: erst Selbsttest, dann Seed löschen und die fünf
+Demo-Läufe neu fahren. Andernfalls stehen Fixture-Namen zwischen den Harborline-Läufen.
+
+```bash
+bash tools/selftest.sh http://45.77.143.94          # Gesundheitscheck
+ssh root@45.77.143.94 'rm -rf /opt/agent-rush/work/runs/*; systemctl restart agent-rush'
+# dann die fünf Pakete aus fixtures/ in dieser Reihenfolge:
+#   left-pad-again 1.2.0, blazingly-fast-utils 0.9.3, harborline 2.8.0, 2.9.0, 2.9.1
+```
+
 ## Erster Schritt morgen
 
 ```bash
