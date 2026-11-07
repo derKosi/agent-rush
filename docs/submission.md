@@ -105,6 +105,8 @@ one verified containment moment recorded in the README with the exact observatio
 ## Numbers for the form
 
 - 96 tests, most of them runnable without Docker
-- 13 fixtures, including a three-version demo line (`harborline` 2.8.0 / 2.9.0 / 2.9.1)
+- 15 fixtures, including a three-version demo line (`harborline` 2.8.0 / 2.9.0 / 2.9.1) and two
+  behaviour fixtures that are hostile on their own: `quickchart-export` in its install hook,
+  `telemetry-shim` on first import
 - 12 slides, 1920×1080 cover
 - Public instance: `vc2-1c-2gb`, Frankfurt, ~$0.014/h

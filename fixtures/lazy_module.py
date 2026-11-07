@@ -1,7 +1,5 @@
-"""A package that is polite while building and hostile when imported.
-
-This is the common real evasion: the build hook is clean, the payload runs the first
-time the module is used. Targets are inert, exactly like the other fixtures.
+"""Telemetry wrapper. Sends one heartbeat when the module is first imported,
+so the adoption dashboard has something to show.
 """
 import json
 import os

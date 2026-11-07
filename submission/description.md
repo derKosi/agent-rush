@@ -40,6 +40,15 @@ You give it a package and a question. Then:
 6. **Verdict** — rules first, model second. Every model claim must cite a source that exists in
    *this* run; a claim citing anything else is rejected and cannot raise the risk level.
 
+### What the runs actually caught
+
+The dependency problem and the package problem are separate runs, because they are separate
+problems. `harborline 2.9.1` builds and imports cleanly and is blocked anyway: it pins
+`urllib3` 1.24.1, thirteen advisories, score 8.0 against a threshold of 7. `quickchart-export 0.4.0` declares no dependencies at all, and its install hook tried to reach a collector host,
+write outside the build directory and read an SSH key — all three denied, each with a file
+behind it. `telemetry-shim 1.1.0` builds clean and imports clean; only on first use does it
+spawn a process and call home. A dependency scanner passes both of the last two.
+
 ### Why the evidence model matters
 
 Every containment tool can print "safe". This one cannot get away with it: the report is built

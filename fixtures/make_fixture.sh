@@ -167,6 +167,45 @@ PYMOD
   echo "built: $name-$version.tar.gz"
 }
 
+
+# A package that is hostile in its own install hook: no dependencies involved.
+
+# These two are not labelled as fixtures in their own metadata: in the video they are a package
+# someone actually published, and a package that calls itself "synthetic probe" would be a
+# different story. The behaviour is identical; only the cover story differs.
+COVER_COMMENT='# Build-time analytics for chart exports. Runs once at install.'
+
+build_hostile() {
+  local name="$1" version="$2" summary="$3"
+  mkdir -p "$BUILD/$name-$version"
+  { printf '%s\n' "$COVER_COMMENT"
+    printf '%s\n' "$PROBES" | tail -n +3
+    printf 'from setuptools import setup  # noqa: E402\n\nsetup(name="%s", version="%s",\n      description="%s", packages=[])\n' "$name" "$version" "$summary"
+  } > "$BUILD/$name-$version/setup.py"
+  printf 'Metadata-Version: 2.1\nName: %s\nVersion: %s\nSummary: %s\n\nInternal build.\n' \
+    "$name" "$version" "$summary" > "$BUILD/$name-$version/PKG-INFO"
+  printf '%s\n' "$summary" > "$BUILD/$name-$version/README.md"
+  COPYFILE_DISABLE=1 tar czf "$HERE/$name-$version.tar.gz" --exclude '._*' \
+    -C "$BUILD" "$name-$version"
+  echo "built: $name-$version.tar.gz"
+}
+
+# A package that is silent while building and hostile on first import.
+build_lazy() {
+  local name="$1" version="$2" summary="$3"
+  local module="${name//-/_}"
+  mkdir -p "$BUILD/$name-$version/$module"
+  printf 'from setuptools import setup\n\nsetup(name="%s", version="%s",\n      description="%s", packages=["%s"])\n' \
+    "$name" "$version" "$summary" "$module" > "$BUILD/$name-$version/setup.py"
+  printf 'Metadata-Version: 2.1\nName: %s\nVersion: %s\nSummary: %s\n\nInternal build.\n' \
+    "$name" "$version" "$summary" > "$BUILD/$name-$version/PKG-INFO"
+  printf '%s\n' "$summary" > "$BUILD/$name-$version/README.md"
+  cp "$HERE/lazy_module.py" "$BUILD/$name-$version/$module/__init__.py"
+  COPYFILE_DISABLE=1 tar czf "$HERE/$name-$version.tar.gz" --exclude '._*' \
+    -C "$BUILD" "$name-$version"
+  echo "built: $name-$version.tar.gz"
+}
+
 build_pkg() {
   local name="$1" version="$2" inject="$3"
   mkdir -p "$BUILD/$name-$version"
@@ -287,3 +326,7 @@ build_product blazingly-fast-utils 0.9.3 "six==1.15.0" "Blazingly fast. Allegedl
 build_product harborline 2.8.0 "six>=1.16" "Harborline analytics toolkit"
 build_product harborline 2.9.0 "six==1.15.0" "Harborline analytics toolkit"
 build_product harborline 2.9.1 "urllib3==1.24.1" "Harborline analytics toolkit"
+
+# Act two of the demo: the package itself misbehaves, not its dependencies.
+build_hostile quickchart-export 0.4.0 "Chart export for the reporting service"
+build_lazy telemetry-shim 1.1.0 "Drop-in telemetry wrapper"

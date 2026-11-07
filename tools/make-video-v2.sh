@@ -27,8 +27,8 @@ rid() { curl -s "$BASE/runs?limit=20" | "$HERE/.venv/bin/python" -c "
 import json,sys
 w=sys.argv[1]; r=json.load(sys.stdin)['runs']
 print(next((x['id'] for x in r if w in ((x.get('task') or {}).get('package') or '')), ''))" "$1"; }
-R291="$(rid harborline-2.9.1)"; R290="$(rid harborline-2.9.0)"; R280="$(rid harborline-2.8.0)"
-[ -n "$R291" ] || { echo "no harborline runs on $BASE" >&2; exit 3; }
+R291="$(rid harborline-2.9.1)"; RQC="$(rid quickchart-export)"; RTS="$(rid telemetry-shim)"
+[ -n "$R291" ] && [ -n "$RQC" ] && [ -n "$RTS" ] || { echo "no harborline runs on $BASE" >&2; exit 3; }
 
 echo "== 2/4 browser prep"
 osascript <<'EOS' >/dev/null
@@ -49,6 +49,10 @@ EOS
 sleep 2
 nav() { osascript -e "tell application \"Safari\" to set URL of front document to \"$1\"" >/dev/null; sleep "$2"; }
 nav "$BASE/hero.html" 4
+# Warm the repo page: on a cold load GitHub needs longer than its beat, and a beat that shows a
+# spinner is a wasted beat. Second load comes from cache.
+nav "https://github.com/derKosi/agent-rush" 7
+nav "$BASE/hero.html" 2
 
 echo "== 3/4 screen pass (${TOTAL}s)"
 rm -f "$OUT/demo-raw-v2.mov"
@@ -59,12 +63,12 @@ nav "$BASE/hero.html" "${A[0]}"
 nav "$BASE/?theme=dark" "${A[1]}"
 nav "$BASE/?run=$R291&theme=dark" "${A[2]}"
 nav "$BASE/?run=$R291&tab=deps&theme=dark" "${A[3]}"
-nav "$BASE/?settings=1" "${A[4]}"
-nav "$BASE/?run=$R290&theme=dark" "8"
-nav "$BASE/?run=$R280&theme=dark" "7.7"
+nav "$BASE/?run=$RQC&theme=dark" "${A[4]}"
+nav "$BASE/?run=$RTS&theme=dark" "${A[5]}"
 nav "$BASE/?run=$R291&tab=evidence&theme=dark" "${A[6]}"
-nav "https://github.com/derKosi/agent-rush" "${A[7]}"
-nav "$BASE/hero.html" "${A[8]}"
+nav "$BASE/?settings=1" "${A[7]}"
+nav "https://github.com/derKosi/agent-rush" "${A[8]}"
+nav "$BASE/hero.html" "${A[9]}"
 wait $REC 2>/dev/null
 
 echo "== 4/4 encode + mux"
@@ -72,7 +76,7 @@ echo "== 4/4 encode + mux"
   -c:v libx264 -crf 20 -preset veryfast -an "$OUT/demo-video-v2.mp4"
 "$FF" -y -loglevel error -f lavfi -i anullsrc=r=24000:cl=mono -t 0.8 "$V/sil.mp3"
 : > "$V/list.txt"
-for i in 1 2 3 4 5 6 7 8 9; do
+for i in 1 2 3 4 5 6 7 8 9 10; do
   echo "file '$V/beat-$i.mp3'" >> "$V/list.txt"; echo "file '$V/sil.mp3'" >> "$V/list.txt"
 done
 "$FF" -y -loglevel error -f concat -safe 0 -i "$V/list.txt" -c:a libmp3lame -q:a 4 "$V/voiceover-v2.mp3"
