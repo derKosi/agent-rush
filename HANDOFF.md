@@ -102,6 +102,61 @@ ssh root@45.77.143.94 'rm -rf /opt/agent-rush/work/runs/*; systemctl restart age
 #   left-pad-again 1.2.0, blazingly-fast-utils 0.9.3, harborline 2.8.0, 2.9.0, 2.9.1
 ```
 
+## Wenn du auf einem anderen Harness weitermachst
+
+Kein Zustand lebt nur in einem Chat. Alles Nötige steht im Repo; was nur lokal existiert, ist
+unten aufgeführt.
+
+**1. Repo holen**
+
+```bash
+git clone https://github.com/derKosi/agent-rush && cd agent-rush
+# oder, falls GitHub klemmt:
+git clone ~/agent-rush-2026-11-06.bundle
+```
+
+**2. Umgebung**
+
+```bash
+python3 -m venv .venv
+.venv/bin/pip install fastapi "uvicorn[standard]" httpx python-pptx pillow imageio-ffmpeg edge-tts
+```
+
+**3. Zugänge** (nur lokal, nie im Repo)
+
+| Wo | Was |
+|---|---|
+| `.env` im Projektordner | `AR_VULTR_KEY` (Inference), `AR_MODEL=glm-5.2`, `AR_VULTR_API_KEY` (Instanzen) |
+| `root@45.77.143.94` | VM, Dienst `agent-rush`, Repo unter `/opt/agent-rush` |
+
+**4. Die vier Kommandos, die alles abdecken**
+
+```bash
+bash tools/selftest.sh http://45.77.143.94     # Gesundheit + drei echte Läufe
+bash tools/record-demo.sh                      # Bildschirmfassung, 2:34
+bash tools/make-video.sh http://45.77.143.94 en-US-AvaNeural demo-v2
+bash deploy/remote-setup.sh root@45.77.143.94  # VM neu aufsetzen
+```
+
+**5. Was nur auf dieser Platte liegt**
+
+`recordings/` (Videos, Stimmen, SRT), `.env`, `submission/`-Medien, `~/agent-rush-2026-11-06.bundle`.
+Wenn davon etwas wichtig ist: kopieren, bevor der Rechner wechselt.
+
+**6. Welche Datei wofür**
+
+| Datei | Zweck |
+|---|---|
+| `README.md` | was das Produkt ist, was es nicht ist, wie es läuft |
+| `HANDOFF.md` | dieser Stand |
+| `docs/submission.md` | Formulartext, Zahlen, Checkliste |
+| `docs/submission-checklist.md` | Schritt für Schritt zur Abgabe |
+| `docs/transcript.md` | Voice-over, EN + DE, mit gemessenen Zeiten |
+| `docs/assets.md` | Cover, Diagramm, Screenshots, Zahlen aus allen Arbeitsständen |
+| `docs/architecture.md` | Aufbau, Phasen, Beweismodell |
+| `docs/roadmap.md`, `docs/market.md` | Ausblick und Einordnung |
+| `docs/build-log.md` | wie es entstand, welche Fehler es kostete |
+
 ## Erster Schritt morgen
 
 ```bash
