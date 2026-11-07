@@ -1,0 +1,63 @@
+1
+00:00:00,000 --> 00:00:06,120
+This is a package registry for one team. Five
+runs, three packages, one of them blocked.
+
+2
+00:00:06,920 --> 00:00:23,380
+pip install runs code before anyone has read
+it. The build hook of a source package
+executes with the installing user's rights: it
+can read SSH keys, call out, leave files
+behind. Everyone knows this, and everyone
+installs packages nobody read — because
+reading does not scale.
+
+3
+00:00:24,180 --> 00:00:41,340
+This is harborline 2.9.1. The model read it,
+chose which probes to run, and executed them
+in a container on Vultr with no network, a
+read-only filesystem and no root. Verdict:
+high. And the sentence that matters is the
+first one — the package builds and imports
+cleanly.
+
+4
+00:00:42,140 --> 00:01:01,080
+Because the problem is not in the package. It
+pins urllib3 1.24.1 — a release from 2018.
+Thirteen known advisories, the worst scored
+eight out of ten. The threshold is seven, so
+this blocks. The wheels are fetched and
+hashed, never installed. That hash is what you
+would actually get.
+
+5
+00:01:01,880 --> 00:01:16,620
+Two runs earlier, the same package was fine.
+2.8.0 and 2.9.0 both came back low — 2.9.0
+with a note that one dependency was a minor
+behind. The regression arrived with 2.9.1.
+
+6
+00:01:17,420 --> 00:01:33,070
+Every claim in this report points at a file:
+the proxy log, the process result, the
+filesystem diff. The model is allowed to
+summarise them. It is not allowed to assert
+anything they do not contain — a claim citing
+a source that is not in this run gets dropped,
+and you can see it here.
+
+7
+00:01:33,870 --> 00:01:41,690
+That is the difference between a scanner and a
+verdict: this one can show you why, on the
+same screen, without you trusting a green
+checkmark.
+
+8
+00:01:42,490 --> 00:01:48,010
+Agent Rush. Source and MIT licence in the
+repository, demo at this URL.

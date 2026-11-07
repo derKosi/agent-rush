@@ -332,6 +332,19 @@ $('run-form').addEventListener('submit', async (event) => {
   }
 });
 
+/* ---------------- settings ---------------- */
+function showView(which) {
+  const isSettings = which === 'settings';
+  $('settings').hidden = !isSettings;
+  $('runview').hidden = isSettings || !currentId;
+  $('placeholder').hidden = isSettings || !!currentId;
+  $('tab-runs').classList.toggle('active', !isSettings);
+  $('tab-settings').classList.toggle('active', isSettings);
+}
+
+$('tab-runs').addEventListener('click', () => showView('runs'));
+$('tab-settings').addEventListener('click', () => showView('settings'));
+
 /* ---------------- theme + boot ---------------- */
 function setTheme(next) {
   document.documentElement.dataset.theme = next;
@@ -348,6 +361,13 @@ setTheme(wantTheme || document.documentElement.dataset.theme || 'dark');
 
 getJSON('health').then((h) => {
   if (typeof h.dep_threshold === 'number') DEP_THRESHOLD = h.dep_threshold;
+  const limits = h.limits || {};
+  if ($('set-hour')) $('set-hour').textContent = `${limits.per_hour} per hour`;
+  if ($('set-day')) $('set-day').textContent = `${limits.ip_daily_cap} per day`;
+  if ($('set-concurrent')) $('set-concurrent').textContent = `${limits.max_concurrent} at a time`;
+  if ($('set-threshold')) $('set-threshold').textContent = `${h.dep_threshold ?? 7} / 10`;
+  if ($('set-reasoning')) $('set-reasoning').textContent = h.reasoning || 'off';
+  if ($('set-model') && h.model) $('set-model').options[0].textContent = `${h.model} — in use`;
   $('model-chip').textContent = h.model_configured
     ? `${h.model} · reasoning ${h.reasoning}`
     : 'rules only';
@@ -356,6 +376,10 @@ getJSON('health').then((h) => {
 // ?new=1 opens the run dialog, for screenshots of the flow.
 if (new URLSearchParams(location.search).get('new')) {
   setTimeout(() => { $('form-note').textContent = ''; dialog.showModal(); }, 300);
+}
+
+if (new URLSearchParams(location.search).get('settings')) {
+  showView('settings');
 }
 
 loadRuns().then(() => {

@@ -10,6 +10,7 @@ set -uo pipefail
 BASE="${1:-http://45.77.143.94}"
 VOICE="${2:-en-US-AndrewNeural}"
 NAME="${3:-demo-v1}"
+SUBS="${4:-off}"   # off | small | full
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
 V="$HERE/recordings/voice"
 OUT="$HERE/recordings"
@@ -76,7 +77,7 @@ nav "$BASE/?theme=dark" "${H[7]}"
 wait $REC 2>/dev/null
 
 echo "== 4/4 mux"
-"$FF" -y -loglevel error -i "$OUT/demo-raw.mov" -vf "crop=2880:1462:0:198,scale=1440:-2" \
+"$FF" -y -loglevel error -i "$OUT/demo-raw.mov" -vf "crop=2880:1524:0:136,scale=1440:-2" \
   -c:v libx264 -crf 20 -preset veryfast -an "$OUT/demo-video.mp4"
 "$FF" -y -loglevel error -f lavfi -i anullsrc=r=24000:cl=mono -t 0.8 "$V/sil.mp3"
 : > "$V/list.txt"
@@ -86,9 +87,21 @@ for i in 1 2 3 4 5 6 7 8; do
 done
 "$FF" -y -loglevel error -f concat -safe 0 -i "$V/list.txt" -c:a libmp3lame -q:a 4 "$V/voiceover.mp3"
 "$HERE/.venv/bin/python" "$HERE/tools/make-subtitles.py" >/dev/null || exit 5
-STYLE="FontName=Arial,FontSize=19,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BorderStyle=1,Outline=2,Shadow=0,MarginV=36"
-"$FF" -y -loglevel error -i "$OUT/demo-video.mp4" -i "$V/voiceover.mp3" \
-  -vf "subtitles=$V/subs.srt:force_style='$STYLE'" \
-  -c:v libx264 -crf 20 -preset veryfast -c:a aac -b:a 128k -shortest "$OUT/$NAME.mp4"
+case "$SUBS" in
+  full)  SIZE=19; STYLE="FontName=Arial,FontSize=$SIZE,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BorderStyle=1,Outline=2,Shadow=0,MarginV=36" ;;
+  small) SIZE=14; STYLE="FontName=Arial,FontSize=$SIZE,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BorderStyle=1,Outline=1,Shadow=0,MarginV=18" ;;
+  *)     STYLE="" ;;
+esac
+
+if [ -n "$STYLE" ]; then
+  echo "burning subtitles ($SUBS)"
+  "$FF" -y -loglevel error -i "$OUT/demo-video.mp4" -i "$V/voiceover.mp3" \
+    -vf "subtitles=$V/subs.srt:force_style='$STYLE'" \
+    -c:v libx264 -crf 20 -preset veryfast -c:a aac -b:a 128k -shortest "$OUT/$NAME.mp4"
+else
+  echo "no burned subtitles — sidecar stays at $V/subs.srt"
+  "$FF" -y -loglevel error -i "$OUT/demo-video.mp4" -i "$V/voiceover.mp3" \
+    -c:v copy -c:a aac -b:a 128k -shortest "$OUT/$NAME.mp4"
+fi
 "$FF" -hide_banner -i "$OUT/$NAME.mp4" 2>&1 | grep -E "Duration|Stream"
 echo "wrote $OUT/$NAME.mp4"

@@ -73,6 +73,9 @@ Two takes exist:
 | `recordings/demo-v1.mp4` | `en-US-AndrewNeural` (male) | 1:53 |
 | `recordings/demo-v2.mp4` | `en-US-AvaNeural` (female, expressive) | 2:00 |
 | `recordings/demo-v3.mp4` | `fr-FR-VivienneMultilingualNeural` (female, French native) | 1:49 |
+| `recordings/demo-v4.mp4` | Andrew, top bar visible, no captions | 1:53 |
+| `recordings/demo-v5.mp4` | Vivienne, top bar visible, no captions | 1:49 |
+| `recordings/demo-v6-small.mp4` | Vivienne, small captions | 1:49 |
 
 The French multilingual voice reads English with a light accent — clear, but audibly not a native
 speaker. Ava reads slower than Andrew, so the holds regenerate and the screen pass re-times itself — the visuals

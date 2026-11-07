@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Agent Rush</title>
-<link rel="stylesheet" href="app.css?v=35">
+<link rel="stylesheet" href="app.css?v=41">
 <script>
   // Theme before first paint: URL wins, then storage. Setting it later means the page
   // flashes the other theme and, in a screenshot, can be caught half-applied.
@@ -44,6 +44,10 @@
         <span class="crumb-sep">/</span>
         <span class="crumb-here">Runs</span>
       </div>
+      <nav class="crumb-nav">
+        <button class="crumb-tab active" id="tab-runs">Runs</button>
+        <button class="crumb-tab" id="tab-settings">Settings</button>
+      </nav>
       <div class="topbar-right">
         <span class="modelchip" id="model-chip">…</span>
         <button class="icon-btn" id="theme-toggle" title="Switch theme">☾</button>
@@ -55,6 +59,55 @@
     </header>
 
     <div class="content">
+    <section class="settings" id="settings" hidden>
+      <h1>Settings</h1>
+      <p class="lede">Read-only view of what this instance is configured to do. Values come from
+        the service environment, so they change with a restart — not with a click.</p>
+
+      <div class="set-block">
+        <h2>Model</h2>
+        <div class="set-row">
+          <label>Analyser</label>
+          <select id="set-model" disabled>
+            <option>glm-5.2 — in use</option>
+            <option>glm-5.3 — available, not enabled</option>
+            <option>qwen3.8-27b — available, not enabled</option>
+            <option>minimax-m3.1-flash — available, not enabled</option>
+          </select>
+        </div>
+        <div class="set-row"><label>Reasoning</label><span id="set-reasoning" class="value">off</span></div>
+        <div class="set-row"><label>Grounding</label><span class="value">claims must cite a source in this run</span></div>
+        <p class="hint">Model choice and reasoning are set per instance (<code>AR_MODEL</code>, <code>AR_REASONING</code>).</p>
+      </div>
+
+      <div class="set-block">
+        <h2>Dependencies</h2>
+        <div class="set-row"><label>Block threshold</label><span id="set-threshold" class="value">7 / 10</span></div>
+        <div class="set-row"><label>Advisory source</label><span class="value">OSV (osv.dev)</span></div>
+        <div class="set-row"><label>Execution</label><span class="value">wheels fetched and hashed, never installed</span></div>
+      </div>
+
+      <div class="set-block">
+        <h2>Limits</h2>
+        <div class="set-row"><label>Runs per hour, per address</label><span id="set-hour" class="value">–</span></div>
+        <div class="set-row"><label>Runs per day, per address</label><span id="set-day" class="value">–</span></div>
+        <div class="set-row"><label>Concurrent runs</label><span id="set-concurrent" class="value">–</span></div>
+      </div>
+
+      <div class="set-block">
+        <h2>User data</h2>
+        <div class="set-row"><label>Accounts</label><span class="value">demo only — no authentication in this build</span></div>
+        <div class="set-row"><label>Stored per run</label><span class="value">package, verdict, evidence files — on this instance only</span></div>
+        <div class="set-row"><label>Retention</label><span class="value">until deleted; no automatic expiry</span></div>
+        <div class="set-actions">
+          <button class="ghost" disabled>Export runs (JSON)</button>
+          <button class="ghost" disabled>Delete all runs</button>
+        </div>
+        <p class="hint">Both actions exist in the API (<code>GET /runs</code>); the buttons are inert here
+          because this demo has no authentication — a delete button without auth would be a mistake.</p>
+      </div>
+    </section>
+
     <section class="placeholder" id="placeholder">
       <h1>Pick a run</h1>
       <p>Every package is installed, imported and resolved inside a sandbox on Vultr. Pick a run
@@ -100,6 +153,6 @@
   </form>
 </dialog>
 
-<script src="app.js?v=33"></script>
+<script src="app.js?v=41"></script>
 </body>
 </html>
