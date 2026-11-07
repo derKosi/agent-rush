@@ -92,6 +92,8 @@ These were working images, not documentation. The only facts in them that are no
 | `shot2_small` | A capture of the desktop only — Safari was not frontmost. The reason every later capture activates Safari first. |
 | `ui_preview` | First layout: single column, hero card (risk · package · model · duration · "Open full report"), findings with severity labels, no sidebar. |
 | `svg_preview` | Same generation from the other angle: TASK / PLAN / VERDICT / FINDINGS stacked, the topbar reading "Agent Rush — untrusted package triage · Vultr". |
+| `ui4_preview`, `ui5_preview` | Iterations between the two layouts: grid of panels growing, first run history list, then the account chip appearing in a top bar. |
+| `ui6_preview` | The version that first showed Alice / Owner · Acme Corp. / DEMO plus the theme switch, still with the four stat cards. |
 
 _All working previews from this build are covered above: `shot2_small`, `ui_preview`,
 `svg_preview`, `svg_preview2`, `hist_preview`, `ui4`–`ui7_preview`, `light_preview`,

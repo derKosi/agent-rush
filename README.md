@@ -1,33 +1,39 @@
-# Agent Rush — Package Triage Sandbox
+# Quarantine — prove a package is safe before it touches your machine
 
-**Live demo:** <http://45.77.143.94/> · **API docs:** <http://45.77.143.94/api/docs>
+**Live demo:** <http://45.77.143.94/> · **API:** <http://45.77.143.94/api/docs> ·
+**Submission:** Vultr *Agent Rush* Hackathon, Track 1 **Blast Radius Zero**
 
-Submission for **Vultr: Agent Rush Hackathon**, Track 1 *Blast Radius Zero* (Nov 3–8, 2026).
+An agent installs an untrusted package inside a hardened container on Vultr, imports it, and
+resolves its dependency tree — then returns a verdict backed by three evidence sources the
+package cannot write to: the egress proxy log, the process result, and a filesystem diff.
 
-An agent inspects an **untrusted Python source package**, decides how to probe it, runs the
-probe inside a hardened container on a Vultr VM, and returns a **risk report plus the raw
-evidence** — a deny log from the egress proxy, the process result, and a file-system diff.
-
-The point is not that the agent claims something was blocked. The point is that the artifact
-shows the *attempt* and the *denial* side by side.
+The model may summarise that evidence. It may not assert what the evidence does not contain:
+a claim citing a source that is not in this run is dropped, and the risk floor comes from
+rules, not from the model. That is the whole design.
 
 > An agent that only chats is a demo; an agent that executes safely is a product.
 
----
+## What works
 
-## Status
-
-| Area | State |
+| | |
 |---|---|
-| Repo scaffold, LICENSE, docs, cost log | done before kickoff |
-| Sandbox image + runner + egress proxy | **first real run verified 04.11.** locally (Docker 29.5, colima, linux/amd64) — see below |
-| Inference client (Vultr Serverless Inference) | scaffolded, key not yet provisioned |
-| Planner (picks probes, writes an inspection script) | built 05.11., 15/15 tests |
-| Orchestrator: sandbox dispatch + evidence collection | built 03.11., 7/7 tests green against a stub runner |
-| Orchestrator: verdict (rules + grounded model path) | built 04.11., 12/12 tests green |
-| API (POST /tasks, GET /runs, artifacts) | built 04.11., 8/8 tests green, end-to-end run green |
-| UI wired to the API | not started |
-| Deployment on Vultr, public demo URL | **blocked: VM not provisioned yet** |
+| **Runtimes** | Python sdist and npm tarball, detected from archive contents — not the file extension |
+| **Phases** | build hook · first import · dependency resolve, each in its own container |
+| **Containment** | read-only root, no network (except resolve), non-root, cap-drop, pids/mem/time caps |
+| **Evidence** | proxy log, filesystem diff, process result — plus self-reports, labelled as such |
+| **Verdict** | rules set the floor, the model may only raise it; ungrounded claims are dropped |
+| **Dependencies** | fetched as wheels, hashed, checked against OSV, scored 0–10, block at 7 |
+| **Output** | JSON, SARIF 2.1.0, per-artifact download, batch report, CLI with exit codes |
+| **Tests** | 96, most of them runnable without Docker |
+
+## Where it stops
+
+- Dependencies are **listed and checked, never executed** — a novel malicious dependency is
+  visible, not caught.
+- What runs **after** the first import is out of scope. This is a gate in front of an install,
+  not a runtime agent.
+- **No browser automation.** Track 1 allows it; it was cut first and one execution pattern was
+  shipped completely instead.
 
 See [`docs/provenance.md`](docs/provenance.md) for the file-by-file record of what existed
 before the event and what was built during it. That distinction is a rule of this hackathon,
