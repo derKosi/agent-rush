@@ -23,3 +23,8 @@ notes/
 # screen recordings are raw material, not source
 recordings/
 *.mov
+
+# submission staging: text is committed, media is local
+submission/*.png
+submission/*.pptx
+submission/*.mp4
