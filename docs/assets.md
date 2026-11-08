@@ -38,11 +38,11 @@ wheels are hashed and listed, never installed.
 
 | File | Shows |
 |---|---|
-| `docs/screenshots/demo-summary.png` | Dark UI, `harborline 2.9.1`, risk high, four findings, folded info notes |
-| `docs/screenshots/demo-deps.png` | Dependencies tab: gauge with threshold at 7, marker at 8.0, `urllib3 1.24.1 → 2.8.0`, hash `61bf29cada3f…`, `13 · 8`, blocked |
-| `docs/screenshots/demo-light.png` | The same run in the light theme |
-| `docs/screenshots/demo-clean.png` | A low-risk run (`left-pad-again`) for contrast |
-| `docs/screenshots/demo-dialog.png` | The "New run" dialog |
+| `docs/screenshots/archive/demo-summary.png` | Dark UI, `harborline 2.9.1`, risk high, four findings, folded info notes |
+| `docs/screenshots/archive/demo-deps.png` | Dependencies tab: gauge with threshold at 7, marker at 8.0, `urllib3 1.24.1 → 2.8.0`, hash `61bf29cada3f…`, `13 · 8`, blocked |
+| `docs/screenshots/archive/demo-light.png` | The same run in the light theme |
+| `docs/screenshots/archive/demo-clean.png` | A low-risk run (`left-pad-again`) for contrast |
+| `docs/screenshots/archive/demo-dialog.png` | The "New run" dialog |
 
 Older screenshots (`ui-run.png`, `ui-injection.png`, `ui-dashboard*.png`, `ui-history.png`,
 `demo-dashboard.png`, `demo-blocked.png`) are from earlier layouts and are no longer referenced
