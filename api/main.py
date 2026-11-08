@@ -11,6 +11,7 @@ from __future__ import annotations
 import os
 import sys
 import threading
+import urllib.parse
 from pathlib import Path
 from typing import List, Literal, Optional
 
@@ -24,6 +25,7 @@ if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
 from api.guard import Guard                            # noqa: E402
+from orchestrator import upload as upload_mod
 from orchestrator import batch as batch_mod            # noqa: E402
 from orchestrator import sarif as sarif_mod            # noqa: E402
 from orchestrator import pipeline                      # noqa: E402
@@ -36,7 +38,8 @@ BATCHES = batch_mod.BatchStore(RUNS_DIR.parent / "batches")
 
 # A task may only name a package inside these roots. Without this, the endpoint
 # would happily execute anything readable by the service user.
-ALLOWED_ROOTS = [(REPO / "fixtures").resolve(), (RUNS_DIR / "uploads").resolve()]
+UPLOADS_DIR = (RUNS_DIR / "uploads").resolve()
+ALLOWED_ROOTS = [(REPO / "fixtures").resolve(), UPLOADS_DIR]
 
 app = FastAPI(title="Agent Rush", version="0.1", docs_url="/api/docs")
 GUARD = Guard.from_env()
@@ -107,15 +110,27 @@ def health():
     }
 
 
+def _token(request: Request) -> str:
+    auth = request.headers.get("authorization", "")
+    token = auth[7:].strip() if auth.lower().startswith("bearer ") else ""
+    return token or request.headers.get("x-api-token", "").strip()
+
+
+def _admit(request: Request) -> None:
+    """One rate-limit decision for every way in."""
+    decision = GUARD.check(client_ip(request), _token(request))
+    if not decision.allowed:
+        raise HTTPException(
+            status_code=429 if "token" not in decision.reason else 401,
+            detail=decision.reason,
+            headers={"Retry-After": str(decision.retry_after)} if decision.retry_after else None,
+        )
+
+
 @app.post("/tasks", status_code=202)
 def create_task(task: TaskIn, request: Request):
     package = resolve_package(task.package)
-
-    token = ""
-    auth = request.headers.get("authorization", "")
-    if auth.lower().startswith("bearer "):
-        token = auth[7:].strip()
-    token = token or request.headers.get("x-api-token", "").strip()
+    token = _token(request)
 
     decision = GUARD.check(client_ip(request), token)
     if not decision.allowed:
@@ -145,6 +160,55 @@ def _batch_report(record):
         "failed": failed,
         "packages": record.get("results", []),
     }
+
+
+@app.post("/tasks/upload", status_code=202)
+async def create_task_from_upload(request: Request):
+    """The browser path: the file is the request body, the name is in ``X-Filename``.
+
+    Raw body instead of multipart on purpose -- no extra dependency in the image, and one fewer
+    parser between the internet and a queue that runs docker. Everything that makes a package
+    testable is decided here, before the pipeline sees it.
+    """
+    # Validate the bytes before taking a queue slot: a refusal should be about the file, not
+    # about what else is running. The size cap still comes first, so a 25 MB body is cheap.
+    declared = request.headers.get("content-length")
+    if declared and declared.isdigit() and int(declared) > upload_mod.MAX_BYTES:
+        raise HTTPException(413, f"file is larger than {upload_mod.MAX_BYTES // (1024 * 1024)} MB")
+
+    chunks, size = [], 0
+    async for chunk in request.stream():
+        size += len(chunk)
+        if size > upload_mod.MAX_BYTES:
+            raise HTTPException(413, f"file is larger than {upload_mod.MAX_BYTES // (1024 * 1024)} MB")
+        chunks.append(chunk)
+    data = b"".join(chunks)
+
+    name = request.headers.get("x-filename") or request.query_params.get("filename") or ""
+    try:
+        name = urllib.parse.unquote(name)
+    except Exception:  # noqa: BLE001
+        pass
+    try:
+        path, kind = upload_mod.accept(data, name or "package.tar.gz", UPLOADS_DIR)
+    except upload_mod.UploadError as exc:
+        raise HTTPException(400, str(exc)) from exc
+
+    _admit(request)
+
+    mode = request.query_params.get("egress_mode", "proxy")
+    mode = mode if mode in ("none", "proxy") else "proxy"
+    question = request.query_params.get("question") or None
+    task = TaskIn(package=str(path.relative_to(REPO)), question=question, egress_mode=mode)
+
+    GUARD.begin(client_ip(request))
+    run_id = STORE.new_id()
+    STORE.create(run_id, {
+        "task": task.model_dump(),
+        "upload": {"kind": kind, "filename": path.name, "bytes": len(data)},
+    })
+    threading.Thread(target=_dispatch, args=(run_id, path, task), daemon=True).start()
+    return {"id": run_id, "state": "queued", "kind": kind, "filename": path.name}
 
 
 @app.post("/batch", status_code=202)

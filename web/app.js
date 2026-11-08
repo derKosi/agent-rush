@@ -312,16 +312,37 @@ $('run-form').addEventListener('submit', async (event) => {
   button.disabled = true;
   $('form-note').textContent = 'submitting…';
   try {
-    const res = await fetch('tasks', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        package: $('pkg').value.trim(),
-        question: $('q').value,
+    const picked = $('pkgfile').files[0];
+    let res;
+    if (picked) {
+      // The file is the body. No multipart, no encoder between the browser and the queue.
+      const params = new URLSearchParams({
+        filename: picked.name,
+        question: $('q').value || '',
         egress_mode: $('proxy').checked ? 'proxy' : 'none',
-      }),
-    });
-    if (!res.ok) throw new Error((await res.text()).slice(0, 160));
+      });
+      $('form-note').textContent = `uploading ${picked.name}…`;
+      res = await fetch(`tasks/upload?${params}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/octet-stream', 'X-Filename': encodeURIComponent(picked.name) },
+        body: picked,
+      });
+    } else {
+      res = await fetch('tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          package: $('pkg').value.trim(),
+          question: $('q').value,
+          egress_mode: $('proxy').checked ? 'proxy' : 'none',
+        }),
+      });
+    }
+    if (!res.ok) {
+      let detail = (await res.text()).slice(0, 200);
+      try { detail = JSON.parse(`{"d":${detail}}`).d.detail || detail; } catch { /* plain text */ }
+      throw new Error(detail);
+    }
     const { id } = await res.json();
     dialog.close();
     await selectRun(id);

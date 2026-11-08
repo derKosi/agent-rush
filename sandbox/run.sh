@@ -45,6 +45,12 @@ EXTRA_HOSTS=()
 ENV_ARGS=()
 
 if [ "$MODE" = "proxy" ]; then
+  # A run that was killed -- deploy, OOM, Ctrl-C -- leaves its network behind, and because the
+  # subnet is fixed, the next run fails with "Pool overlaps with other one on this address
+  # space". Only one run at a time is allowed, so any ar-net-* here is stale by definition.
+  for stale in $(docker network ls --filter "name=ar-net-" --format '{{.Name}}' 2>/dev/null); do
+    docker network rm "$stale" >/dev/null 2>&1 || true
+  done
   NET_NAME="ar-net-${TASK_ID:0:12}"
   PROXY_NAME="ar-proxy-${TASK_ID:0:12}"
   NET_ARGS=(--network "$NET_NAME")

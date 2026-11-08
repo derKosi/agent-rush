@@ -1,7 +1,7 @@
 # Quarantine — proof before the install
 
 **Live demo:** <http://45.77.143.94/> · **API docs:** <http://45.77.143.94/api/docs> ·
-**Source:** MIT · **Tests:** 96 · **Hardened line:** 7 runs, 5 packages, 3 blocked
+**Source:** MIT · **Tests:** 109 · **Hardened line:** 7 runs, 5 packages, 3 blocked
 
 Every `pip install` runs a stranger's code before anyone has read it. Quarantine puts that moment
 behind glass: an agent inspects an untrusted package, decides which probes to run, executes them in
@@ -132,6 +132,20 @@ target, a `go build` with an `init()`. Not shipped.
 **API.** `POST /tasks` with a package path, poll `GET /runs/{id}`, fetch artifacts, export
 `GET /runs/{id}/sarif`.
 
+**Upload.** The browser sends the file as the request body; the name travels in `X-Filename`:
+
+```
+curl -X POST "http://45.77.143.94/tasks/upload?egress_mode=proxy" \
+     -H "X-Filename: mypkg-1.0.tar.gz" --data-binary @mypkg-1.0.tar.gz
+```
+
+Accepted: a `.tar.gz` sdist, an npm `.tgz`, or a single `.py` file (wrapped into a minimal
+sdist so the import phase still runs). Refused, with a sentence that says why: zips, archives
+without a `setup.py` / `pyproject.toml` / `package/package.json`, paths that escape the archive,
+symlinks, more than 4,000 members, more than 200 MB unpacked, more than 25 MB on the wire.
+Nothing reaches the queue unvalidated — an upload endpoint that accepts anything is a file
+store with a job runner attached.
+
 **CLI**, for a pipeline step:
 
 ```
@@ -147,8 +161,7 @@ A workflow step and the JSON shape: [`docs/ci.md`](docs/ci.md).
 
 ## Testing
 
-96 tests, 1,383 lines of test against 2,465 lines of product code, most of them runnable without
-Docker.
+109 tests, most of them runnable without Docker.
 
 | Area | Tests | What that means |
 |---|---|---|
@@ -157,6 +170,7 @@ Docker.
 | Sandbox wrapper | 7 | artifact collection, proxy log, cleanup — against a stub runner |
 | Dependencies, runtime, reputation | 18 | `PKG-INFO` parsing, runtime detection from archive contents |
 | Guard, recovery, batch, API, SARIF | 34 | rate limits, retry rules, batch report, endpoint contracts |
+| Upload validation | 13 | traversal, symlinks, zip, too many members, single-`.py` wrapping |
 
 Not covered automatically, and why: the container phases themselves (a suite that needs Docker is a
 suite that gets skipped — the phases are verified by running them, and every number in this README
