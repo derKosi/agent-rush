@@ -1,15 +1,21 @@
-# Links und Felder
+# Links and fields
 
-| Feld im Formular | Wert |
+Everything needed to fill the form, in the order the form asks for it.
+
+| Field | Value |
 |---|---|
-| Project title | Quarantine — prove a package is safe before it touches your machine |
-| Demo application URL | http://45.77.143.94/ |
-| Public GitHub repository | https://github.com/derKosi/agent-rush |
-| Video | `video-v1/v2/v3.mp4` — eines auswählen und hochladen |
-| Slides | `slides.pptx` |
-| Cover image | `cover.png` |
-| Licence | MIT (`LICENSE`) |
+| Project title | `Quarantine — prove a package is safe before it touches your machine` |
+| Demo application URL | `http://45.77.143.94/` |
+| Public GitHub repository | `https://github.com/derKosi/agent-rush` (public, MIT, `main`) |
+| Video | `submission/video-v8-three-acts.mp4` — 1:58, three acts |
+| Captions | `submission/captions-v3.srt` |
+| Slides | `submission/slides.pptx` |
+| Cover image | `submission/cover.png` |
+| Long description | `submission/description.md` — 4,689 characters |
+| Licence | MIT |
+| Track | Vultr — Track 1, Blast Radius Zero |
 
-Demo-Zustand vor dem Absenden prüfen: `bash tools/selftest.sh http://45.77.143.94` muss
-`selftest: ok` sagen. Achtung: der Selbsttest erzeugt drei eigene Läufe — danach Seed neu
-fahren, sonst stehen Fixture-Namen zwischen den Demo-Läufen.
+Step-by-step: [`docs/SUBMIT.md`](../docs/SUBMIT.md).
+
+**Do not run the self-test after the seed.** It writes three runs named `selftest-*` into the rail
+the jury sees. It was run this morning; the instance was reseeded afterwards.
