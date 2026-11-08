@@ -71,7 +71,7 @@ which language produced it.
 
 ### Status at submission
 
-Working and publicly reachable: live URL, public repository with MIT license, 96 tests green,
+Working and publicly reachable: live URL, public repository with MIT license, 109 tests green,
 one verified containment moment recorded in the README with the exact observations.
 
 ## Technology & category tags
@@ -104,7 +104,7 @@ one verified containment moment recorded in the README with the exact observatio
 
 ## Numbers for the form
 
-- 96 tests, most of them runnable without Docker
+- 109 tests, most of them runnable without Docker
 - 15 fixtures, including a three-version demo line (`harborline` 2.8.0 / 2.9.0 / 2.9.1) and two
   behaviour fixtures that are hostile on their own: `quickchart-export` in its install hook,
   `telemetry-shim` on first import
