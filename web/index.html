@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Agent Rush</title>
-<link rel="stylesheet" href="app.css?v=42">
+<link rel="stylesheet" href="app.css?v=43">
 <script>
   // Theme before first paint: URL wins, then storage. Setting it later means the page
   // flashes the other theme and, in a screenshot, can be caught half-applied.
@@ -140,10 +140,13 @@
 <dialog id="newrun">
   <form method="dialog" id="run-form">
     <h2>New run</h2>
-    <label for="pkgfile">Package file</label>
-    <input type="file" id="pkgfile" accept=".tar.gz,.tgz,.py">
-    <p class="form-hint">A <code>.tar.gz</code> sdist, an npm <code>.tgz</code>, or a single
-      <code>.py</code> file. Checked before it reaches the queue: gzip tar, no paths outside the
+    <label class="dropzone" id="dropzone" for="pkgfile">
+      <input type="file" id="pkgfile" accept=".tar.gz,.tgz,.py" class="sr-only">
+      <span class="dz-top">Drop a package here — or click to choose a file</span>
+      <span class="dz-sub">.tar.gz sdist · npm .tgz · single .py</span>
+      <span class="dz-file" id="dz-file">no file chosen</span>
+    </label>
+    <p class="form-hint">Checked before it reaches the queue: gzip tar, no paths outside the
       archive, a <code>setup.py</code> or <code>package/package.json</code> inside.</p>
     <label for="pkg">…or a path on this instance</label>
     <input id="pkg" value="fixtures/harborline-2.9.1.tar.gz" spellcheck="false">
@@ -158,6 +161,6 @@
   </form>
 </dialog>
 
-<script src="app.js?v=42"></script>
+<script src="app.js?v=43"></script>
 </body>
 </html>

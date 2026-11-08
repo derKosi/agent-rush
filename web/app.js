@@ -302,8 +302,40 @@ const wantTab = new URLSearchParams(location.search).get('tab');
 if (wantTab) showTab(wantTab);
 
 /* ---------------- new run ---------------- */
+const dz = $('dropzone');
+const dzFile = $('dz-file');
+function showPicked(name) {
+  const has = Boolean(name);
+  dzFile.textContent = has ? name : 'no file chosen';
+  dzFile.classList.toggle('empty', !has);
+}
+$('pkgfile').addEventListener('change', () => {
+  const f = $('pkgfile').files[0];
+  showPicked(f ? f.name : '');
+});
+for (const type of ['dragenter', 'dragover']) {
+  dz.addEventListener(type, (e) => { e.preventDefault(); dz.classList.add('over'); });
+}
+for (const type of ['dragleave', 'dragend']) {
+  dz.addEventListener(type, () => dz.classList.remove('over'));
+}
+dz.addEventListener('drop', (e) => {
+  e.preventDefault();
+  dz.classList.remove('over');
+  const file = e.dataTransfer?.files?.[0];
+  if (!file) return;
+  const dt = new DataTransfer();
+  dt.items.add(file);
+  $('pkgfile').files = dt.files;
+  showPicked(file.name);
+});
 const dialog = $('newrun');
-$('new-run').addEventListener('click', () => { $('form-note').textContent = ''; dialog.showModal(); });
+$('new-run').addEventListener('click', () => {
+  $('form-note').textContent = '';
+  $('pkgfile').value = '';
+  showPicked('');
+  dialog.showModal();
+});
 $('cancel').addEventListener('click', () => dialog.close());
 
 $('run-form').addEventListener('submit', async (event) => {

@@ -321,3 +321,24 @@ input[type="file"]::file-selector-button {
   background: var(--surface); color: var(--text); border: 1px solid var(--line);
   border-radius: 6px; padding: 5px 10px; margin-right: 10px; font-size: 12px; cursor: pointer;
 }
+
+/* The file picker has to look like the thing you are supposed to use. A native file input is a
+   grey strip that reads as decoration; this is a target. */
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+.dropzone {
+  display: flex; flex-direction: column; gap: 4px; align-items: center; justify-content: center;
+  padding: 18px 16px; margin: 4px 0 2px; cursor: pointer; text-align: center;
+  border: 1.5px dashed color-mix(in srgb, var(--accent) 45%, var(--line));
+  border-radius: 10px; background: color-mix(in srgb, var(--accent) 5%, var(--surface-2));
+  transition: border-color .12s, background .12s;
+}
+.dropzone:hover, .dropzone.over {
+  border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--surface-2));
+}
+.dropzone .dz-top { font-size: 13px; color: var(--text); font-weight: 600; }
+.dropzone .dz-sub { font-size: 11.5px; color: var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.dropzone .dz-file { font-size: 11.5px; color: var(--accent); margin-top: 4px; }
+.dropzone .dz-file.empty { color: var(--muted); }

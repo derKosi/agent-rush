@@ -45,6 +45,20 @@ app = FastAPI(title="Agent Rush", version="0.1", docs_url="/api/docs")
 GUARD = Guard.from_env()
 
 
+@app.middleware("http")
+async def _no_store_html(request: Request, call_next):
+    """The page is the product; a cached copy of it is a bug report waiting to happen.
+
+    Safari held on to an old index.html for an hour while the API behind it had moved on, which
+    looks exactly like a missing feature. HTML is never stored; versioned assets still cache.
+    """
+    response = await call_next(request)
+    path = request.url.path
+    if path in ("/", "/index.html", "/hero.html") or path.endswith(".html"):
+        response.headers["cache-control"] = "no-store, max-age=0, must-revalidate"
+    return response
+
+
 def client_ip(request: Request) -> str:
     """Caddy is the only ingress and sets X-Real-IP; trust it, fall back to the peer."""
     return (request.headers.get("x-real-ip")
