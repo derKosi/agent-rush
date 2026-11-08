@@ -55,7 +55,7 @@ It closes with what the tool does **not** do. Leave that part in.
 |---|---|
 | Demo URL | `http://45.77.143.94/` |
 | Repository | `https://github.com/derKosi/agent-rush` |
-| Video | YouTube link, or `submission/video-v8-three-acts.mp4` |
+| Video | YouTube link, or `submission/vidsubmission.mp4` |
 | Slides | `submission/slides.pptx` |
 | Cover | `submission/cover.png` |
 | Licence | MIT |

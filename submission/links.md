@@ -7,8 +7,8 @@ Everything needed to fill the form, in the order the form asks for it.
 | Project title | `Quarantine — prove a package is safe before it touches your machine` |
 | Demo application URL | `http://45.77.143.94/` |
 | Public GitHub repository | `https://github.com/derKosi/agent-rush` (public, MIT, `main`) |
-| Video | `submission/video-v8-three-acts.mp4` — 1:58, three acts |
-| Captions | `submission/captions-v3.srt` |
+| Video | `submission/vidsubmission.mp4` — 1:58, three acts |
+| Captions | none for this cut — YouTube auto-captions |
 | Slides | `submission/slides.pptx` |
 | Cover image | `submission/cover.png` |
 | Long description | `submission/description.md` — 4,689 characters |

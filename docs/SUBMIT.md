@@ -12,20 +12,21 @@ so there is time to fix a rejected upload instead of watching the clock.
 | `bash tools/selftest.sh <url>` | `selftest: ok` — 52 unit checks plus three real runs (low / low / high as expected) |
 | Repository | public, MIT, branch `main`, `d808846` |
 | Tests | 96 test functions in `tests/` |
-| Video | `submission/video-v8-three-acts.mp4`, 1:58, 1440×762, AAC |
-| Captions | `submission/captions-v3.srt` |
+| Video | `submission/vidsubmission.mp4`, 1:58, 1440×762, AAC — the three-act cut |
+| Captions | none ship with this cut; YouTube generates its own |
 
 Everything below assumes nothing changes on the instance. **Do not redeploy, do not re-run the
 self-test after this point** — it writes three fixture runs into the rail the jury looks at.
 
 ## 1. Video to YouTube (about 10 minutes)
 
-Upload `submission/video-v8-three-acts.mp4`.
+Upload `submission/vidsubmission.mp4` (3.4 MB, 1:58).
 
 - **Title:** `Quarantine — prove a package is safe before it touches your machine`
 - **Visibility:** Unlisted (the form needs a link, not an audience)
 - **Thumbnail:** `submission/cover.png`
-- **Captions:** upload `submission/captions-v3.srt` (Subtitle → Upload file → English)
+- **Captions:** leave YouTube's automatic ones. The burned-in text is deliberately absent —
+  a caption file for this cut would have to be re-timed, and a mis-timed caption is worse than none.
 
 Description for the video:
 
@@ -86,7 +87,7 @@ Do **not**, between now and the deadline:
 
 | Symptom | Fix |
 |---|---|
-| Form rejects the YouTube link | upload `video-v8-three-acts.mp4` directly, it is 3.4 MB |
+| Form rejects the YouTube link | upload `submission/vidsubmission.mp4` directly, it is 3.4 MB |
 | Demo URL does not load | `ssh root@45.77.143.94 'systemctl restart agent-rush'` |
 | Rail shows fixture names | I reseed: it is a 5-minute job, the fixtures are all in `fixtures/` |
 | A number in the description looks wrong | check it against `/runs` first, then edit the text, not the claim |
